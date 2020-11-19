@@ -25,9 +25,9 @@ Team member 1 will have the pechakucha uploaded on youtube with a recorded narra
 
 Team member 2 will be responsible for a markdown write up that would allow someone to replicate your analysis (show your code blocks). Post this markdown on your Github not in a google folder. At minimum, please hit on the below components:
 a. Motivate the analysis – “What is the use case; why would someone want to replicate your analysis and why would they use this approach?”
-	b. Describe the data you used.
-	c. Describe your exploratory analysis using maps and plots.
-	d. What is the spatial or space/time process?
+    b. Describe the data you used.
+    c. Describe your exploratory analysis using maps and plots.
+    d. What is the spatial or space/time process?
 d. Describe your modeling approach and show how you arrived at your final model.
 e. Validate your model with cross-validation and describe how your predictions are useful (accuracy vs. generalizability).
 f. Provide additional maps and data visualizations to show that your model is useful.
@@ -42,15 +42,22 @@ Project Details - Forecast Metro train delays in and around NYC (NEW): An amazin
 Questions to prepare for Friday Nov 20th.
 
 What is the use case? 
+- To predict the metro train delays in and around NYC to help commuters travel reliably and efficient train scheduling.  
 
 How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
+-
 
 What datasets have you identified to help you answer this question?
+- The dataset consists of past train delays for the NJ train line. We plan to include census data to account for socio-economic factors. 
 
 What kind of model would you build and what is the dependent variable?
+- Linear regression model trained on the family of poisson distributioins. The dependent variable is the delay (in minutes) variable. 
 
 How will you validate this model (cross-validation & goodness of fit metrics that relate to the business process)?
+- We will perform cross-validation across time (per hour) and analyse the MAE.  
 
 How do you think that stakeholders would want to consume this data?
+- Both people and the service providers will benefit from this. The analysis will help compare the performances of each of the lines/providers. This will help users make informed choices and the service providers give a better experience to the commuters.
 
 What are the use cases for your app and what should the app do?
+- The app will give probable dalay estimates based on different factors like time, location, day of the week and line type. This will helps travellers plan their trip more efficiently. The same can be used by the servive providers to see how their trains are performing and try to overcome factors that cause delays that may affect their revenue.    
