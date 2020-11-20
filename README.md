@@ -45,19 +45,20 @@ What is the use case?
 - To predict the metro train delays in and around NYC to help commuters travel reliably and efficient train scheduling.  
 
 How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
--
+- Data permits authorities to perform both long term and short term planning. Short-term planning can be used to handle minor modifications to daily frequency while long term handling can be used to handle seasonal variations and critical weather conditions.
+Since transit network is a government undertaking the business process will mostly be non-profit making and focusing more on doing good for the society. We will separately also analyze `amtrak` data which is more of a quasi-public corporation operating as a for-profit organization.
 
 What datasets have you identified to help you answer this question?
 - The dataset consists of past train delays for the NJ train line. We plan to include census data to account for socio-economic factors. 
 
 What kind of model would you build and what is the dependent variable?
-- Linear regression model trained on the family of poisson distributioins. The dependent variable is the delay (in minutes) variable. 
+- Linear regression model trained on the family of poisson distributions. The dependent variable is the delay (in minutes) variable. 
 
 How will you validate this model (cross-validation & goodness of fit metrics that relate to the business process)?
-- We will perform cross-validation across time (per hour) and analyse the MAE.  
+- We will perform cross-validation across time (per hour) and analyze the MAE.  
 
 How do you think that stakeholders would want to consume this data?
 - Both people and the service providers will benefit from this. The analysis will help compare the performances of each of the lines/providers. This will help users make informed choices and the service providers give a better experience to the commuters.
 
 What are the use cases for your app and what should the app do?
-- The app will give probable dalay estimates based on different factors like time, location, day of the week and line type. This will helps travellers plan their trip more efficiently. The same can be used by the servive providers to see how their trains are performing and try to overcome factors that cause delays that may affect their revenue.    
+- The app will give probable delay estimates based on different factors like time, location, day of the week and line type. This will helps travelers plan their trip more efficiently. The same can be used by the service providers to see how their trains are performing and try to overcome factors that cause delays that may affect their revenue.    

@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="UTF-8"?><metadata>
+    <idinfo>
+        <citation>
+            <citeinfo>
+                <origin/>
+                <pubdate>20180719</pubdate>
+                <title>NJ TRANSIT Rail, Light Rail, and Subway Currently Operated Right-of-Way lines, with connecting PATH, PATCO and SEPTA Rail, 2018 (NAD83, NJSP feet)</title>
+                <edition>Based on NJ TRANSIT data release of 2016-07-01. No change to data definition from previous release; data records have been updated and expanded.</edition>
+                <geoform>vector digital data</geoform>
+                <pubinfo>
+                    <pubplace/>
+                    <publish>NJ Office of Information Technology, Office of GIS (NJOGIS)</publish>
+                </pubinfo>
+                <othercit>Zip file also includes passenger rail stations.</othercit>
+                <onlink>http://newjersey.maps.arcgis.com/home/item.html?id=2117276b2d83440da81970db6a8c6edb</onlink>
+                <onlink>http://njogis-newjersey.opendata.arcgis.com/</onlink>
+            </citeinfo>
+        </citation>
+        <descript>
+            <abstract>Line data delineating right-of-way centerlines for rail, light rail, and subway service lines operated by NJ TRANSIT, and connecting commuter lines operated by Port Authority Trans Hudson (PATH), Port Authority Transit Corporation (PATCO) and Southeastern Pennsylvania Transportation Authority (SEPTA). Data set is in shapefile format (Esri).</abstract>
+            <purpose>Provides location and attribute information for currently operated regional rail service. Data set is intended only for general planning and mapping use. Single lines represent approximate right-of-way centerlines, not track centerlines.</purpose>
+            <supplinf>This shapefile does not include linear referencing m values. Most of the lines were heads-up digitized from New Jersey 2007 High Resolution Orthophotography, which has a 1 foot pixel size and tested accuracy of +/- 4 feet. Some of the lines were derived from other sources. These data are re-published by NJ Office of Information Technology, Office of GIS (NJOGIS) under agreement with NJ TRANSIT - Transportation GIS. The SEPTA Trenton Line (it connects with NJ TRANSIT Northeast Corridor line) and SEPTA West Trenton Line are included.</supplinf>
+        </descript>
+        <timeperd>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+            <current>ground condition</current>
+        </timeperd>
+        <status>
+            <progress>Complete</progress>
+            <update>Quarterly</update>
+        </status>
+        <spdom>
+            <bounding>
+                <westbc>-75.214293</westbc>
+                <eastbc>-73.979072</eastbc>
+                <northbc>41.488687</northbc>
+                <southbc>39.361259</southbc>
+            </bounding>
+        </spdom>
+        <keywords>
+            <theme>
+                <themekt>ISO 19115 Topic Categories</themekt>
+                <themekey>transportation</themekey>
+            </theme>
+            <theme>
+                <themekt>NJGIN</themekt>
+                <themekey>njfw_transport</themekey>
+            </theme>
+            <theme>
+                <themekt>ISO 19115 Topic Category</themekt>
+                <themekey>transportation</themekey>
+            </theme>
+            <theme>
+                <themekt>None</themekt>
+                <themekey>passenger rail</themekey>
+                <themekey>commuter rail line</themekey>
+                <themekey>railroad</themekey>
+                <themekey>Riverline</themekey>
+                <themekey>RiverLINE</themekey>
+                <themekey>ATLANTIC CITY RAIL LINE</themekey>
+                <themekey>transit</themekey>
+                <themekey>Hudson-Bergen Light Rail</themekey>
+                <themekey>PORT JERVIS LINE</themekey>
+                <themekey>PASCACK VALLEY LINE</themekey>
+                <themekey>PATH</themekey>
+                <themekey>Port Authority Trans Hudson</themekey>
+                <themekey>mass transit</themekey>
+                <themekey>River line</themekey>
+                <themekey>Newark City Subway</themekey>
+                <themekey>rail</themekey>
+                <themekey>BERGEN COUNTY LINE</themekey>
+                <themekey>SEPTA West Trenton Line</themekey>
+                <themekey>NORTHEAST CORRIDOR LINE</themekey>
+                <themekey>train</themekey>
+                <themekey>railway</themekey>
+                <themekey>NORTH JERSEY COAST LINE</themekey>
+                <themekey>rail line</themekey>
+                <themekey>RARITAN VALLEY LINE</themekey>
+                <themekey>MAIN LINE</themekey>
+                <themekey>MORRIS &amp; ESSEX LINE</themekey>
+                <themekey>SEPTA Trenton Line</themekey>
+                <themekey>commuter rail</themekey>
+                <themekey>BOONTON LINE</themekey>
+                <themekey>PATCO high speed line</themekey>
+                <themekey>public transportation</themekey>
+            </theme>
+            <place>
+                <placekt>None</placekt>
+                <placekey>Mercer County</placekey>
+                <placekey>New York County</placekey>
+                <placekey>Hunterdon County</placekey>
+                <placekey>Essex County</placekey>
+                <placekey>NY</placekey>
+                <placekey>Bergen County</placekey>
+                <placekey>Atlantic County</placekey>
+                <placekey>Middlesex County</placekey>
+                <placekey>PA</placekey>
+                <placekey>Philadelphia</placekey>
+                <placekey>Morris County</placekey>
+                <placekey>Somerset County</placekey>
+                <placekey>New York</placekey>
+                <placekey>Ocean County</placekey>
+                <placekey>Pennsylvania</placekey>
+                <placekey>Camden County</placekey>
+                <placekey>Monmouth County</placekey>
+                <placekey>NJ</placekey>
+                <placekey>Union County</placekey>
+                <placekey>Passaic County</placekey>
+                <placekey>Orange County</placekey>
+                <placekey>New Jersey</placekey>
+                <placekey>Hudson County</placekey>
+                <placekey>Rockland County</placekey>
+                <placekey>Warren County</placekey>
+                <placekey>Burlington County</placekey>
+            </place>
+            <temporal>
+                <tempkt>None</tempkt>
+                <tempkey>2018</tempkey>
+                <tempkey>June 2018</tempkey>
+            </temporal>
+        </keywords>
+        <accconst>None</accconst>
+        <useconst>See conditions and disclaimers on NJ TRANSIT developer Web site. See Purpose, Data Quality, and Distribution sections in this metadata record for conditions that limit appropriate uses. Acknowledgement of the data set providers, NJ TRANSIT, GIS-Transportation and NJ Office of Information Technology, Office of GIS (NJOGIS), would be appreciated for maps, data or other products derived from this data set.</useconst>
+        <ptcontac>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                    <cntper>Patrick McDonald</cntper>
+                </cntorgp>
+                <cntpos>GIS Supervisor</cntpos>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>NJ</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>609-777-4590</cntvoice>
+                <cntfax>609-633-0400</cntfax>
+                <cntemail>Patrick.McDonald@tech.nj.gov</cntemail>
+                <hours>M - F, 9am - 5pm</hours>
+                <cntinst>Email is preferred.</cntinst>
+            </cntinfo>
+        </ptcontac>
+        <datacred>Source data in shapefile format are provided by Harry Brown, Manager, Transportation GIS at NJ TRANSIT. Data are processed by NJ Office of Information Technology, Office of GIS (NJOGIS). Service pattern information was retrieved from public Web sites, including maps, for NJ TRANSIT Newark Light Rail and Port Authority Trans Hudson (PATH) service.</datacred>
+        <native>Version 6.2 (Build 9200) ; Esri ArcGIS 10.5.1.7333</native>
+    </idinfo>
+    <dataqual>
+        <attracc>
+            <attraccr>Status of attribute checks not provided.</attraccr>
+            <qattracc>
+                <attracce>None</attracce>
+            </qattracc>
+        </attracc>
+        <logic>The file contains duplicate lines on rights of way where more than one service operates. Topology has been checked for some lines, but error-free topology is not guaranteed. The ultimate source of line work varies by operator.</logic>
+        <complete>Includes only portions of track currently used by passenger rail service.</complete>
+        <posacc>
+            <horizpa>
+                <horizpar>Rail line data for most of the lines were digitized from New Jersey 2007 HIgh Resolution Orthophotography, which has a tested accuracy of +/- 4 feet, NSSDA, and a one foot pixel size. Source of line data for subsurface lines (e.g. PATH, PATCO, Newark City subway) not provided to metadata author.</horizpar>
+                <qhorizpa>
+                    <horizpae>None</horizpae>
+                </qhorizpa>
+            </horizpa>
+        </posacc>
+        <lineage>
+            <procstep>
+                <procdesc>PATCO line feature class was modified according to high-resolution ortho photo image, to improve alignments with tracks.</procdesc>
+                <procdate>20150316</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Yelena Pikovskaya</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609.633.0420</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>yelena.pikovskaya@tech.nj.gov</cntemail>
+                        <hours>9-4</hours>
+                        <cntinst>e-mail is preferred</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>Data sources were gathered for a new release of rail line data by NJOGIS. NJ TRANSIT GIS supplied shapefile of rail lines (included SEPTA Trenton Line, but not RiverLINE nor PATCO, and did not follow service pattern format). Several previous releases of rail data by NJOGIS (most recent release was missing some lines).</procdesc>
+                <procdate>20160225</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Edith Konopka</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-3774</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>edith.konopka@tech.nj.gov</cntemail>
+                        <hours>9-4</hours>
+                        <cntinst>Email is preferred.</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>Newark Light Rail and PATH lines were edited to reflect service patterns. Segments were duplicated, split, merged, and edited to correct topology problems.</procdesc>
+                <procdate>20160229</procdate>
+                <proctime>140000</proctime>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Edith Konopka</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-3774</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>edith.konopka@tech.nj.gov</cntemail>
+                        <hours>9-4</hours>
+                        <cntinst>Email is preferred.</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>Line work for a new publication of the NJ TRANSIT rail lines and connecting rail services was appended to a new shapefile from several sources: -NJ TRANSIT regional rail service lines were used from the release published by NJOGIS in 2015, after spot-checking locations against NJ TRANSIT February 2016 delivery. Glenn Newman had stated there were no changes to rail lines. -NJ TRANSIT RiverLINE and Hudson-Bergen Light Rail lines were used from the release published by NJOGIS in 2015. -NJ TRANSIT Newark Light Rail lines from the February delivery by NJT were edited to reflect two main service routes. -PATH lines from the June 2014 publication by NJOGIS were edited to create a record for each main service pattern. -PATCO line was copied from the NJOGIS 2015 release. -SEPTA line was copied from NJT February 2016 delivery. The Princeton "Dinky" line was edited by NJOGIS to reflect changes apparent in 2015 orthoimagery.</procdesc>
+                <procdate>20160229</procdate>
+                <proctime>160000</proctime>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Edith Konopka</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-3774</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>edith.konopka@tech.nj.gov</cntemail>
+                        <hours>9-4</hours>
+                        <cntinst>Email is preferred.</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>West Trenton Line (from West Trenton station to 30th Street Station in Philadelphia) was added based on Delaware Valley Regional Planning Commission rail line data.</procdesc>
+                <procdate>20160701</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Patrick McDonald</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>(609) 777-4590</cntvoice>
+                        <cntfax>(609) 633-0400</cntfax>
+                        <cntemail>patrick.mcdonald@tech.nj.gov</cntemail>
+                        <hours>8-4 (M-F)</hours>
+                        <cntinst>Email preferred</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>Metadata updated to reflect current date. No changes to rail data.</procdesc>
+                <procdate>20180719</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Patrick McDonald</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Supervisor</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-4590</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>Patrick.McDonald@tech.nj.gov</cntemail>
+                        <hours>M - F, 9am - 5pm</hours>
+                        <cntinst>Email is preferred.</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+        </lineage>
+    </dataqual>
+    <spdoinfo>
+        <direct>Vector</direct>
+        <ptvctinf>
+            <sdtsterm>
+                <sdtstype>Complete chain</sdtstype>
+                <ptvctcnt>30</ptvctcnt>
+            </sdtsterm>
+        </ptvctinf>
+    </spdoinfo>
+    <eainfo>
+        <detailed>
+            <enttyp>
+                <enttypl>Tran_railroad_passenger</enttypl>
+                <enttypd>Rail line right-of-way centerlines</enttypd>
+                <enttypds>NJ TRANSIT Corporation</enttypds>
+            </enttyp>
+            <attr>
+                <attrlabl>OBJECTID</attrlabl>
+                <attrdef>Internal feature number.</attrdef>
+                <attrdefs>Esri</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Sequential unique whole numbers that are automatically generated.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>Shape</attrlabl>
+                <attrdef>Feature geometry.</attrdef>
+                <attrdefs>ESRI</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Coordinates defining the features.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RAIL_LINE</attrlabl>
+                <attrdef>Rail service line or sub-line (branch) name, as known to public via NJ TRANSIT publications; or connecting service name.</attrdef>
+                <attrdefs>NJ TRANSIT Corporation</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>ATLANTIC CITY RAIL LINE</edomv>
+                                                						
+                        
+                        <edomvd>Rail service line across S. New Jersey, between Philadelphia and Atlantic City</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>BERGEN COUNTY LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line between Hoboken, NJ and Suffern, NY, via East branch (Rutherford, Garfield, Plauderville, Fair Lawn, Glen Rock Boro Hall)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>HUDSON BERGEN LIGHT RAIL</edomv>
+                                                						
+                        
+                        <edomvd>Hudson-Bergen Light Rail, all branches</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>MEADOWLANDS RAIL LINE</edomv>
+                                                						
+                        
+                        <edomvd>Hoboken via Secaucus to Meadowlands Sports Complex including MetLife Stadium</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>MAIN LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line between Hoboken, NJ and Suffern, NY, via West branch (Secaucus Junction, Kingland, Lyndhurst, Delawanna, Passaic, Clifton, Paterson, Hawthorne, Glen Rock-Main)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>MONTCLAIR BOONTON LINE</edomv>
+                                                						
+                        
+                        <edomvd>Hoboken-Montclair-Hackettstown or New York-Montclair-Hackettstown</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>MORRIS &amp; ESSEX LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line from New York or Hoboken, to Hackettstown via Summit and Morristown, or to Gladstone via Summit</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PASCACK VALLEY LINE</edomv>
+                                                						
+                        
+                        <edomvd>North-South line through central Hudson and Bergen counties</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NEWARK LIGHT RAIL</edomv>
+                                                						
+                        
+                        <edomvd>Light rail and subway line service in the Newark, Belleville, and Bloomfield</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NORTH JERSEY COAST LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line from New York or Hoboken to Long Branch and Bay Head. Coincident with Northeast Corridor line until split after Rahway.</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NORTHEAST CORRIDOR LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line from New York to Trenton. Separate branch service between Princeton Junction and Princeton.</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PATCO SPEEDLINE</edomv>
+                                                						
+                        
+                        <edomvd>Trans-Delaware line between Philadelphia and Lindenwold, NJ, aka Port Authority Transit Corporation, governed by Delaware River Port Authority</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation and NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PATH</edomv>
+                                                						
+                        
+                        <edomvd>Trans-Hudson line between Newark, NJ; Jersey City, NJ; Hoboken, NJ; and New York City. Aka Port Authority Trans Hudson, governed by Port Authority of New York and New Jersey (PANYNJ)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation and NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PORT JERVIS LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service lines from New York City to Port Jervis, NY, via either Clifton (Main Line) or Garfield (Bergen County Line.)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>RARITAN VALLEY LINE</edomv>
+                                                						
+                        
+                        <edomvd>Service line New York City to High Bridge, NJ.</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>RIVER LINE</edomv>
+                                                						
+                        
+                        <edomvd>Light rail service from Camden, along Route 130 Corridor, and to Trenton</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT Corporation</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>SEPTA</edomv>
+                                                						
+                        
+                        <edomvd>Trenton Line connecting rail service</edomvd>
+                                                						
+                        
+                        <edomvds>Southeastern Pennsylvania Transportation Authority</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>WEST TRENTON LINE</edomv>
+                                                						
+                        
+                        <edomvd>Rail service from West Trenton to 30th Street station in Philadelphia</edomvd>
+                                                						
+                        
+                        <edomvds>NJ Office of Information Technology, Office of GIS (NJOGIS)</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SERVICE</attrlabl>
+                <attrdef>Specialized service of rail line, provided on particular trains</attrdef>
+                <attrdefs>NJ TRANSIT Corporation</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Identifier for variant service (different service route and/or destination). Separate features are included for NJ Transit regional rail, Newark light rail, and PATH, but not for Hudson-Bergen light rail, RiverLINE, or SEPTA.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>DATE_STAMP</attrlabl>
+                <attrdef>Date of last update or edit.</attrdef>
+                <attrdefs>NJ TRANSIT Corporation</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Date field with dates in mM/dD/YYYY format</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>Shape_Length</attrlabl>
+                <attrdef>Length of feature in internal units.</attrdef>
+                <attrdefs>Esri</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Positive real numbers that are automatically generated.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+        </detailed>
+    </eainfo>
+    <distinfo>
+        <distrib>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                </cntorgp>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>NJ</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(609) 633-9103</cntvoice>
+                <cntfax>(609) 633-0200</cntfax>
+                <cntemail>njgin@oit.nj.gov</cntemail>
+            </cntinfo>
+        </distrib>
+        <resdesc>Passenger Railroad Lines in New Jersey, State of New Jersey, Office of GIS ArcGIS Online Site</resdesc>
+        <distliab>See conditions and disclaimers on NJ Transit developer Web site.</distliab>
+        <stdorder>
+            <digform>
+                <digtinfo>
+                    <formname>AVSHP</formname>
+                    <formvern>10.5.1</formvern>
+                    <filedec>zip</filedec>
+                </digtinfo>
+                <digtopt>
+                    <onlinopt>
+                        <computer>
+                            <networka>
+                                <networkr>http://newjersey.maps.arcgis.com/home/item.html?id=2117276b2d83440da81970db6a8c6edb</networkr>
+                            </networka>
+                        </computer>
+                        <computer>
+                            <networka>
+                                <networkr>http://njogis-newjersey.opendata.arcgis.com/</networkr>
+                            </networka>
+                        </computer>
+                        <accinstr>Passenger Railroad Lines in New Jersey, State of New Jersey, Office of GIS ArcGIS Online Site</accinstr>
+                    </onlinopt>
+                </digtopt>
+            </digform>
+            <fees>None</fees>
+            <ordering>Download from http://newjersey.maps.arcgis.com</ordering>
+        </stdorder>
+        <availabl>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+        </availabl>
+    </distinfo>
+    <distinfo>
+        <distrib>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ TRANSIT-Transportation GIS</cntorg>
+                    <cntper>Harry Brown</cntper>
+                </cntorgp>
+                <cntpos>Manager</cntpos>
+                <cntaddr>
+                    <addrtype>mailing and physical</addrtype>
+                    <address>One Penn Plaza East</address>
+                    <city>Newark</city>
+                    <state>NJ</state>
+                    <postal>07105</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(973) 491-8986</cntvoice>
+                <cntemail>htbrown@njtransit.com</cntemail>
+            </cntinfo>
+        </distrib>
+        <distliab>See conditions and disclaimers on NJ Transit developer Web site.</distliab>
+        <stdorder>
+            <digform>
+                <digtinfo>
+                    <formname>GTFS</formname>
+                    <filedec>zip</filedec>
+                </digtinfo>
+                <digtopt>
+                    <onlinopt>
+                        <computer>
+                            <networka>
+                                <networkr>https://www.njtransit.com/mt/mt_servlet.srv?hdnPageAction=MTDevLoginTo</networkr>
+                            </networka>
+                        </computer>
+                    </onlinopt>
+                </digtopt>
+            </digform>
+            <fees>None</fees>
+            <ordering>In order to access GTFS data, you must sign up for an account on the NJ TRANSIT site for developers at https://www.njtransit.com/mt/mt_servlet.srv?hdnPageAction=MTDevLoginTo After login the page provides access to downloads of zipped GTFS data for rail and bus, including schedule information; instructions for the DepartureVision Web Service; RSS Feeds of Travel Advisories for Rail, Bus, Light Rail; and RSS Feed of Customer Notices for All Modes.</ordering>
+        </stdorder>
+        <availabl>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+        </availabl>
+    </distinfo>
+    <metainfo>
+        <metd>20180802</metd>
+        <metc>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                    <cntper>Edith Konopka</cntper>
+                </cntorgp>
+                <cntpos>GIS Specialist</cntpos>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>NJ</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>609-777-3774</cntvoice>
+                <cntfax>609-633-0400</cntfax>
+                <cntemail>edith.konopka@tech.nj.gov</cntemail>
+                <hours>9-4</hours>
+                <cntinst>Email is preferred.</cntinst>
+            </cntinfo>
+        </metc>
+        <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+        <metstdv>FGDC-STD-001-1998</metstdv>
+        <mettc>local time</mettc>
+        <metsi>
+            <metscs>ArcGIS</metscs>
+            <metsc>Unclassified</metsc>
+            <metshd>no special handling required</metshd>
+        </metsi>
+    </metainfo>
+</metadata>
