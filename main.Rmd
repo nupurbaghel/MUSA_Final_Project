@@ -112,11 +112,14 @@ dat = read.csv('archive/2018_03.csv')
 
 #Convert all lines to lower case
 dat$line = tolower(dat$line)
-dat <- dat %>%
-       mutate(line = )
 ```
 
 ```{r}
 njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
   st_transform('EPSG:2236')
+```
+
+
+```{r}
+hist(dat$delay_minutes)
 ```
