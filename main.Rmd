@@ -114,6 +114,8 @@ dat = read.csv('archive/2018_03.csv')
 
 #Convert all lines to lower case
 dat$line = tolower(dat$line)
+dat$scheduled_time = as_date(dat$scheduled_time)
+dat$actual_time = as_date(dat$actual_time)
 ```
 
 ## New Jersey Rail Lines and Rail Stations dataset
@@ -202,7 +204,7 @@ nas <- dat_njstation %>%
 
 ## Census Data
 Collecting census data for States - New Jersey, New York and Pennsylvania
-```{r get_census, message=FALSE, warning=FALSE, cache=TRUE, results=}
+```{r get_census, message=FALSE, warning=FALSE, cache=TRUE}
 census <- 
   get_acs(geography = "tract", 
           variables = c("B01003_001", "B19013_001", 
@@ -270,8 +272,21 @@ glimpse(weather.Panel)
 ## Exploratory Data Analysis
 
 ### Weather Panel 
+```{r}
 
-### Distribution of Delay
+```
+
+### Distribution of Total delay for different trains
+```{r}
+delay_train <- dat_njstation %>%
+  mutate(date = date(scheduled_time)) %>%
+  select(train_id, delay_minutes, date) %>%
+  group_by(train_id, date) %>%
+  summarize(total_delay = sum(delay_minutes))
+
+ggplot(delay_train, aes(total_delay)) +
+  geom_histogram()
+```
 
 ### Distribution for Time of Day
 
@@ -290,3 +305,6 @@ glimpse(weather.Panel)
 
 ### Split Data into Train and Test
 ### 
+
+
+There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
