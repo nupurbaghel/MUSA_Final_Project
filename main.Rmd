@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r setup_13, cache=TRUE, message=FALSE, include=FALSE}
+```{r setup_13, message=FALSE, include=FALSE}
 library(tidyverse)
 library(sf)
 library(lubridate)
@@ -32,6 +32,7 @@ library(caret)
 library(osmdata)
 library(gifski)
 library(gganimate)
+library(mapview)
 
 mapTheme <- function(base_size = 12) {
   theme(
@@ -107,6 +108,7 @@ census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
 
 # Import Data
 
+## Kaggle Train Delay dataset
 ```{r}
 dat = read.csv('archive/2018_03.csv')
 
@@ -114,8 +116,13 @@ dat = read.csv('archive/2018_03.csv')
 dat$line = tolower(dat$line)
 ```
 
+## New Jersey Rail Lines and Rail Stations dataset
 ```{r}
 njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
+  st_transform('EPSG:2236')
+njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
+  st_transform('EPSG:2236')
+amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
 ```
 
@@ -123,3 +130,163 @@ njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_
 ```{r}
 hist(dat$delay_minutes)
 ```
+
+```{r message=FALSE, warning=FALSE}
+subset_amtrak <- st_crop(amtrak, st_bbox(njstations))
+
+ggplot() +
+  geom_sf(data = subset_amtrak, color = "black") +
+  geom_sf(data = njlines, color = "blue") +
+  mapTheme
+```
+
+```{r}
+# dat - nj (geometry)
+# atl. city line - ATLANTIC CITY RAIL LINE
+# bergen co. line - BERGEN COUNTY LINE, HUDSON BERGEN LIGHT RAIL
+# main line - MAIN LINE
+# montclair-boonton - MONTCLAIR BOONTON LINE
+# morristown line - MORRIS & ESSEX
+# no jersey coast - NORTH JERSEY COAST LINE
+# northeast corrdr- NORTHEAST CORRIDOR LINE
+# pascack valley - PASCACK VALLEY LINE
+# raritan valley - RARITAN VALLEY LINE
+
+# dat - Amtrak
+
+# [1] "regional"                  "amtrak"                   
+# [3] "crescent"                  "acela express"            
+# [5] "keystone"                  "pennsylvanian"            
+# [7] "carolinian"                "silver star  -r"          
+# [9] "silver meteor-r"           "vermonter    -r"          
+# [11] "amtrak regional"           "palmetto"                 
+# [13] "cardinal"                  "bergen co. line "         
+# [15] "silver service / palmetto"
+
+# Missing - 6 (gladstone branch), 14 (princeton shuttle)
+
+#amtrak_type_line <- dat %>% filter (type == 'Amtrak')
+#dat_amtrak <- subset(dat, type == 'Amtrak')
+#dat_amtrak_from <- dat_amtrak %>%
+  #left_join(amtrak, by = c('from' = 'CITY2'))
+#dat_amtrak_to <- dat_amtrak %>%
+  #left_join(amtrak, by = c('to' = 'CITY2'))
+
+
+dat <- dat %>%
+  mutate(new_line_name_geo = case_when(
+                  line == 'atl. city line' ~ 'ATLANTIC CITY RAIL LINE',
+                  line == 'bergen co. line' ~ 'BERGEN COUNTY LINE',
+                  line == 'main line' ~ 'MAIN LINE',
+                  line == 'montclair-boonton' ~ 'MONTCLAIR BOONTON LINE',
+                  line == 'morristown line' ~ 'MORRIS & ESSEX',
+                  line == 'no jersey coast' ~ 'NORTH JERSEY COAST LINE',
+                  line == 'northeast corrdr' ~ 'NORTHEAST CORRIDOR LINE',
+                  line == 'pascack valley' ~ 'PASCACK VALLEY LINE',
+                  line == 'raritan valley' ~ 'RARITAN VALLEY LINE',
+                  ))
+dat_nj <- subset(dat, type != 'Amtrak')
+
+dat_nj_line <- dat_nj %>%
+  left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
+
+dat_njstation <- dat_nj %>%
+  left_join(njstations, by = c('from' = 'STATION'))
+
+dat_njstation_to <- dat_nj %>%
+  left_join(njstations, by = c('to' = 'STATION'))
+
+nas <- dat_njstation %>%
+  filter (is.na(COUNTY))
+```
+
+## Census Data
+Collecting census data for States - New Jersey, New York and Pennsylvania
+```{r get_census, message=FALSE, warning=FALSE, cache=TRUE, results=}
+census <- 
+  get_acs(geography = "tract", 
+          variables = c("B01003_001", "B19013_001", 
+                        "B02001_002", "B08013_001",
+                        "B08012_001", "B08301_001", 
+                        "B08301_010", "B01002_001"), 
+          year = 2018, 
+          state = c("NJ",'NY','PA'),
+          geometry = TRUE, 
+          output = "wide") %>%
+  rename(Total_Pop =  B01003_001E,
+         Med_Inc = B19013_001E,
+         Med_Age = B01002_001E,
+         White_Pop = B02001_002E,
+         Travel_Time = B08013_001E,
+         Num_Commuters = B08012_001E,
+         Means_of_Transport = B08301_001E,
+         Total_Public_Trans = B08301_010E) %>%
+  select(Total_Pop, Med_Inc, White_Pop, Travel_Time,
+         Means_of_Transport, Total_Public_Trans,
+         Med_Age,
+         GEOID, geometry) %>%
+  mutate(Percent_White = White_Pop / Total_Pop,
+         Mean_Commute_Time = Travel_Time / Total_Public_Trans,
+         Percent_Taking_Public_Trans = Total_Public_Trans / Means_of_Transport) %>% 
+  st_transform('EPSG:2236')
+```
+```{r}
+subset_census <- census[st_crop(census, st_bbox(njstations)),]
+
+mapview(st_bbox(census)) +
+  mapview(njstations, cex = 2) +
+  mapview(st_bbox(subset_census), col.regions = "orange")
+
+```
+
+
+```{r}
+ggplot() +
+  geom_sf(data = subset_census) +
+  geom_sf(data = njstations %>% st_transform('EPSG:2236'), color = "blue") +
+  mapTheme
+```
+
+
+## Weather Data
+Collecting weather data for Trenton for the same duration as our original data set (March 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study it would make sense to include other location's weather data as well.
+
+```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
+weather.Panel <- 
+  riem_measures(station = "TTN", date_start = "2018-03-01", date_end = "2018-03-31") %>%
+  dplyr::select(valid, tmpf, p01i, sknt)%>%
+  replace(is.na(.), 0) %>%
+    mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
+    mutate(week = week(interval60),
+           dotw = wday(interval60, label=TRUE)) %>%
+    group_by(interval60) %>%
+    summarize(Temperature = max(tmpf),
+              Precipitation = sum(p01i),
+              Wind_Speed = max(sknt)) %>%
+    mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
+glimpse(weather.Panel)
+```
+
+## Exploratory Data Analysis
+
+### Weather Panel 
+
+### Distribution of Delay
+
+### Distribution for Time of Day
+
+### Distribution across Time and Space
+
+
+## Feature Engineering
+### Distance between Stations
+```{r}
+
+```
+
+### Correlation plot for Continuous numeric features
+
+## Training Model
+
+### Split Data into Train and Test
+### 

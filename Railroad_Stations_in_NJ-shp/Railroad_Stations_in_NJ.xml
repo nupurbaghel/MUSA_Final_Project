@@ -1,0 +1,1049 @@
+<?xml version="1.0" encoding="UTF-8"?><metadata>
+    <idinfo>
+        <citation>
+            <citeinfo>
+                <origin/>
+                <pubdate>20180719</pubdate>
+                <title>NJ TRANSIT, PATH, PATCO and SEPTA Passenger Rail Station points, 2018 (NAD83, NJSP feet)</title>
+                <edition>Based on NJ TRANSIT data release of 2016-07-01. No change to data definition from previous release; data records have been updated and expanded.</edition>
+                <geoform>vector digital data</geoform>
+                <pubinfo>
+                    <pubplace/>
+                    <publish>NJ Office of Information Technology, Office of GIS (NJOGIS)</publish>
+                </pubinfo>
+                <othercit>Zip file also includes service right-of-way line data.</othercit>
+                <onlink>http://njogis-newjersey.opendata.arcgis.com</onlink>
+                <onlink>http://newjersey.maps.arcgis.com/home/item.html?id=acf1aa71053f4bb48a1aad7034f35e48</onlink>
+            </citeinfo>
+        </citation>
+        <descript>
+            <abstract>Point data delineating station point locations for rail, light rail, and subway service lines operated by NJ TRANSIT and connecting commuter lines operated by Port Authority Trans Hudson (PATH), Port Authority Transit Corporation (PATCO) and Southeastern Pennsylvania Transportation Authority (SEPTA). Points for most stations are located as delivered by NJ TRANSIT GIS, with a few exceptions. Some of the attributes have been updated. See process steps for details.</abstract>
+            <purpose>Provides station location and attribute information for currently operated regional rail service. Data set is intended only for general planning and mapping use. Station points do not necessarily fall on rail line segments.</purpose>
+            <supplinf>Most of the station points were heads-up digitized from New Jersey 2007 High Resolution Orthophotography or from New Jersey 2012 High Resolution Orthophotography, both of which have a 1 foot pixel size and tested accuracy of +/- 4 feet. Some of the station locations were derived from other sources. Data set is published in shapefile format (Esri). This shapefile does not include linear referencing m values, and the stations are not topologically connected to the rail lines. These data are re-published by NJ Office of Information Technology, Office of GIS (NJOGIS) under agreement with NJ TRANSIT - Transportation GIS</supplinf>
+        </descript>
+        <timeperd>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+            <current>ground condition</current>
+        </timeperd>
+        <status>
+            <progress>Complete</progress>
+            <update>Quarterly</update>
+        </status>
+        <spdom>
+            <bounding>
+                <westbc>-75.197949</westbc>
+                <eastbc>-73.979217</eastbc>
+                <northbc>41.471765</northbc>
+                <southbc>39.361352</southbc>
+            </bounding>
+        </spdom>
+        <keywords>
+            <theme>
+                <themekt>NJGIN</themekt>
+                <themekey>njfw_transport</themekey>
+            </theme>
+            <theme>
+                <themekt>None</themekt>
+                <themekey>Lindenwold high speed line</themekey>
+                <themekey>Port Authority Trans Hudson</themekey>
+                <themekey>RARITAN VALLEY LINE</themekey>
+                <themekey>NORTHEAST CORRIDOR LINE</themekey>
+                <themekey>transit</themekey>
+                <themekey>commuter rail line</themekey>
+                <themekey>BOONTON LINE</themekey>
+                <themekey>rail stations</themekey>
+                <themekey>Riverline</themekey>
+                <themekey>public transportation</themekey>
+                <themekey>Newark LIght Rail</themekey>
+                <themekey>train</themekey>
+                <themekey>stations</themekey>
+                <themekey>BERGEN COUNTY LINE</themekey>
+                <themekey>PATH</themekey>
+                <themekey>railway</themekey>
+                <themekey>station</themekey>
+                <themekey>Newark City Subway</themekey>
+                <themekey>passenger rail</themekey>
+                <themekey>rail line</themekey>
+                <themekey>PATCO</themekey>
+                <themekey>railroad</themekey>
+                <themekey>NORTH JERSEY COAST LINE</themekey>
+                <themekey>rail</themekey>
+                <themekey>mass transit</themekey>
+                <themekey>MORRIS &amp; ESSEX LINE</themekey>
+                <themekey>PASCACK VALLEY LINE</themekey>
+                <themekey>ATLANTIC CITY RAIL LINE</themekey>
+                <themekey>PORT JERVIS LINE</themekey>
+                <themekey>commuter rail</themekey>
+                <themekey>NJ TRANST</themekey>
+                <themekey>MAIN LINE</themekey>
+                <themekey>RiverLINE</themekey>
+                <themekey>River line</themekey>
+                <themekey>Hudson-Bergen Light Rail</themekey>
+                <themekey>Trenton Line</themekey>
+                <themekey>West Trenton Line</themekey>
+            </theme>
+            <theme>
+                <themekt>ISO 19115 Topic Category</themekt>
+                <themekey>transportation</themekey>
+            </theme>
+            <theme>
+                <themekt>ISO 19115 Topic Categories</themekt>
+                <themekey>transportation</themekey>
+            </theme>
+            <place>
+                <placekt>None</placekt>
+                <placekey>New Jersey</placekey>
+                <placekey>NJ</placekey>
+                <placekey>New York</placekey>
+                <placekey>NY</placekey>
+                <placekey>Pennsylvania</placekey>
+                <placekey>PA</placekey>
+                <placekey>Philadelphia</placekey>
+                <placekey>Camden</placekey>
+                <placekey>Trenton</placekey>
+                <placekey>Newark</placekey>
+                <placekey>New Brunswick</placekey>
+                <placekey>New York County</placekey>
+                <placekey>Essex County</placekey>
+                <placekey>Orange County</placekey>
+                <placekey>Rockland County</placekey>
+                <placekey>Camden County</placekey>
+                <placekey>Somerset County</placekey>
+                <placekey>Mercer County</placekey>
+                <placekey>Morris County</placekey>
+                <placekey>Hunterdon County</placekey>
+                <placekey>Atlantic County</placekey>
+                <placekey>Hudson County</placekey>
+                <placekey>Union County</placekey>
+                <placekey>Passaic County</placekey>
+                <placekey>Warren County</placekey>
+                <placekey>Middlesex County</placekey>
+                <placekey>Ocean County</placekey>
+                <placekey>Bergen County</placekey>
+                <placekey>Burlington County</placekey>
+                <placekey>Monmouth County</placekey>
+            </place>
+            <temporal>
+                <tempkt>None</tempkt>
+                <tempkey>June 2018</tempkey>
+                <tempkey>2018</tempkey>
+            </temporal>
+        </keywords>
+        <accconst>None</accconst>
+        <useconst>See conditions and disclaimers on NJ TRANSIT developer Web site. See Purpose, Data Quality, and Distribution sections in this metadata record for conditions that limit appropriate uses. Acknowledgement of the data set providers, NJ TRANSIT, GIS-Transportation and NJ Office of Information Technology, Office of GIS (NJOGIS), would be appreciated for maps, data or other products derived from this data set. </useconst>
+        <ptcontac>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                    <cntper>Patrick McDonald</cntper>
+                </cntorgp>
+                <cntpos>GIS Specialist</cntpos>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>NJ</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(609) 777-4590</cntvoice>
+                <cntfax>(609) 633-0400</cntfax>
+                <cntemail>patrick.mcdonald@tech.nj.gov</cntemail>
+                <hours>8-4 (M-F)</hours>
+                <cntinst>Email preferred</cntinst>
+            </cntinfo>
+        </ptcontac>
+        <datacred>Source data in shapefile format are provided by Harry Brown, Manager, Transportation GIS at NJ TRANSIT.  Data are processed by NJ Office of Information Technology, Office of GIS (NJOGIS).  Attribute data format cleanup by Steven Karp, Office for Planning Advocacy, NJ Department of State.</datacred>
+        <native>Esri ArcGIS 10.5.1.7333</native>
+    </idinfo>
+    <dataqual>
+        <attracc>
+            <attraccr>Station names were edited by Steven Karp and checked by inspection.</attraccr>
+            <qattracc>
+                <attracce>None</attracce>
+            </qattracc>
+        </attracc>
+        <logic>The station points are not topologically connected to rail line data. They vary in accuracy and in location relative to tracks, platforms, and station buildings.</logic>
+        <complete>Includes only stations currently used by passenger rail service. Includes stations for non-NJ TRANSIT commuter rail service that connects with NJ TRANSIT service in terms of proximity, i.e. PATCO Speedline, SEPTA, and PANYNJ PATH service.</complete>
+        <posacc>
+            <horizpa>
+                <horizpar>Rail station location data for most of the lines were digitized from New Jersey 2007 HIgh Resolution Orthophotography, which has a tested accuracy of +/- 4 feet, NSSDA, and a one foot pixel size. Source of station data for subsurface lines (e.g. PATH, PATCO, Newark Light Rail) was not provided to metadata author. Some station locations for PATCO were edited using New Jersey 2012 High Resolution Orthoimagery and New Jersey 2015 High Resolution Orthoimagery, which met at least same accuracy standards as 2007 data.  SEPTA West Trenton Line and Trenton Line stations were obtained from Delaware Regional Planning Commission rail station data.</horizpar>
+                <qhorizpa>
+                    <horizpae>Station points were compared with 2015 orthophotography.</horizpae>
+                </qhorizpa>
+            </horizpa>
+        </posacc>
+        <lineage>
+            <srcinfo>
+                <srccite>
+                    <citeinfo>
+                        <pubdate>20150301</pubdate>
+                        <title>NJ TRANSIT, PATH and PATCO Passenger Rail Station points, 2015 (NAD83, NJSP feet)</title>
+                    </citeinfo>
+                </srccite>
+                <typesrc>onLine</typesrc>
+                <srctime>
+                    <timeinfo>
+                        <sngdate>
+                            <caldate>20150301</caldate>
+                        </sngdate>
+                    </timeinfo>
+                    <srccurr>publication date</srccurr>
+                </srctime>
+                <srccitea>NJ TRANSIT, PATH and PATCO Passenger Rail Station points, 2015 (NAD83, NJSP feet)</srccitea>
+                <srccontr>Shapefiles were provided of NJT Rail, NJT Light Rail, PATH, and PATCO stations, with station names and locations, and several other attributes.</srccontr>
+            </srcinfo>
+            <srcinfo>
+                <srccite>
+                    <citeinfo>
+                        <pubdate>20160210</pubdate>
+                        <title>New Jersey 2015 High Resolution Orthophotography, Natural Color Web Map Service (WMS)</title>
+                    </citeinfo>
+                </srccite>
+                <srcscale>2400</srcscale>
+                <typesrc>None</typesrc>
+                <srctime>
+                    <timeinfo>
+                        <rngdates>
+                            <begdate>20150329</begdate>
+                            <enddate>20150503</enddate>
+                        </rngdates>
+                    </timeinfo>
+                    <srccurr>Ground condition</srccurr>
+                </srctime>
+                <srccitea>New Jersey 2015 High Resolution Orthophotography, Natural Color Web Map Service (WMS)</srccitea>
+                <srccontr>Statewide orthophotography flown in March - May 2015.</srccontr>
+            </srcinfo>
+            <srcinfo>
+                <srccite>
+                    <citeinfo>
+                        <pubdate>20160607</pubdate>
+                        <title>DVRPC Passenger Rail Stations</title>
+                    </citeinfo>
+                </srccite>
+                <typesrc>None</typesrc>
+                <srccitea>DVRPC Passenger Rail Stations</srccitea>
+                <srccontr>Delaware Valley Regional Planning Commission rail station data</srccontr>
+            </srcinfo>
+            <procstep>
+                <procdesc>Shapefiles sent by NJ TRANSIT were compiled into a single file geodatabase feature class. Locations of some PATCO stations were edited, based on 2012 orthophotography, personal knowledge, and other publicly-accessible information. Attribute ATIS_ID was filled in from previous station layer, partly by joining on station name and partly by manual examination of station name and rail line. Entries were cross checked afterward using those fields. Station names were converted to title case and manually edited to make punctutation and abbreviation consistent. Most now match the previous version of the data, with station names edited by Steven Karp.</procdesc>
+                <procdate>20150618</procdate>
+                <proctime>100000</proctime>
+            </procstep>
+            <procstep>
+                <procdesc>RAIL_LINE entry was edited to match case and punctuation as on NJ TRANSIT Web Site, PATH and PATCO Web Sites. MUN_LABEL field was also filled in from previous entries by Karp. Latitude and Longitude were calculated for station locations per NAD83. AMTRAK attribute was added and filled in based on AMTRAK Web page list and map of Northeast AMTRAK stations, from previous station layer.</procdesc>
+                <procdate>20150618</procdate>
+                <proctime>140000</proctime>
+            </procstep>
+            <procstep>
+                <procdesc>January release of NJ TRANSIT data was compared to previously-published NJOGIS data by doing a select by location using a 500 ft intersect buffer. Records from the previous NJOGIS data were used for most stations. Wesmont station was added to NJOGIS data. The point for Bay Head station was moved to match NJ TRANSIT mapped location in their release of 2016-01-09. The point for the Princeton (University) station was moved to the new track centerline, in front of the newly-constructed station location, as shown on 2015 orthophotography.</procdesc>
+                <procdate>20160226</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Edith Konopka</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Specialist</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-3774</cntvoice>
+                        <cntemail>edith.konopka@oit.nj.gov</cntemail>
+                        <hours>9-4</hours>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+            <procstep>
+                <procdesc>Wesmont station was changed to in service from under contstruction.
+
+All of the SEPTA West Trenton line and Trenton line stations were added from Delaware Valley Regional Planning Commission rail data.</procdesc>
+                <procdate>20160701</procdate>
+            </procstep>
+            <procstep>
+                <procdesc>Metadata updated to reflect current date.  No changes to rail data.</procdesc>
+                <procdate>20180719</procdate>
+                <proccont>
+                    <cntinfo>
+                        <cntorgp>
+                            <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                            <cntper>Patrick McDonald</cntper>
+                        </cntorgp>
+                        <cntpos>GIS Supervisor</cntpos>
+                        <cntaddr>
+                            <addrtype>mailing</addrtype>
+                            <address>PO Box 212</address>
+                            <city>Trenton</city>
+                            <state>NJ</state>
+                            <postal>08625-0212</postal>
+                            <country>US</country>
+                        </cntaddr>
+                        <cntvoice>609-777-4590</cntvoice>
+                        <cntfax>609-633-0400</cntfax>
+                        <cntemail>Patrick.McDonald@tech.nj.gov</cntemail>
+                        <hours>M - F, 9am - 5pm</hours>
+                        <cntinst>Email is preferred.</cntinst>
+                    </cntinfo>
+                </proccont>
+            </procstep>
+        </lineage>
+    </dataqual>
+    <spdoinfo>
+        <direct>Vector</direct>
+        <ptvctinf>
+            <sdtsterm>
+                <sdtstype>Entity point</sdtstype>
+                <ptvctcnt>285</ptvctcnt>
+            </sdtsterm>
+        </ptvctinf>
+    </spdoinfo>
+    <eainfo>
+        <detailed>
+            <enttyp>
+                <enttypl>Tran_railroad_station</enttypl>
+                <enttypd>Rail station points</enttypd>
+                <enttypds>NJ TRANSIT</enttypds>
+            </enttyp>
+            <attr>
+                <attrlabl>OBJECTID</attrlabl>
+                <attrdef>Internal feature number.</attrdef>
+                <attrdefs>Esri</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Sequential unique whole numbers that are automatically generated.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>LATITUDE</attrlabl>
+                <attrdef>Latitude of the location in decimal degrees</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Real numbers, decimal degrees per NAD83</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>LONGITUDE</attrlabl>
+                <attrdef>Longitude of the location in signed decimal degrees</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Real numbers, decimal degrees per NAD83</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>RAIL_LINE</attrlabl>
+                <attrdef>Name of rail line used for named passenger service, on which the station is a stop. Roughly equivalent to RAIL_LINE attribute in Tran_railroad_passenger. However, cannot be used to join in current format. See following notes: For stations shared by more than one line, the lines are all included in the same entry, as abbreviations. Entries not well controlled; in some cases, names or abbreviations differ that refer to the same line.</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Atlantic City Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Atlantic City Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Gladstone Branch/M&amp;E</edomv>
+                                                						
+                        
+                        <edomvd>Station on Gladstone Branch (only) of Morris &amp; Essex line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Hudson-Bergen Light Rail</edomv>
+                                                						
+                        
+                        <edomvd>Station on Hudson-Bergen Light Rail Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Main/Bergen Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Main/Bergen Line. Some stations access both services, some only one or the other</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Meadowlands Rail Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Meadowlands Rail Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Montclair-Boonton Line/M&amp;E</edomv>
+                                                						
+                        
+                        <edomvd>Station on Montclair-Boonton Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Morris &amp; Essex Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Morris &amp; Essex Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Morristown Line/M&amp;E</edomv>
+                                                						
+                        
+                        <edomvd>Station on Morristown Line/Morris &amp; Essex Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NEC / NJCL</edomv>
+                                                						
+                        
+                        <edomvd>Station on Northeast Corridor Line and North Jersey Coast Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NEC / NJCL/M&amp;E</edomv>
+                                                						
+                        
+                        <edomvd>Station on Northeast Corridor Line, North Jersey Coast Line, and Morris &amp; Essex Line.</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NEC / NJCL / M&amp;E / Main&amp;Bergen</edomv>
+                                                						
+                        
+                        <edomvd>Station on Northeast Corridor Line, North Jersey Coast Line, Morris &amp; Essex Line, Main Line, and Bergen County Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>NEC/NJCL/RVL</edomv>
+                                                						
+                        
+                        <edomvd>Station on Northeast Corridor Line, North Jersey Coast Line, and Raritan Valley Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Newark Light Rail</edomv>
+                                                						
+                        
+                        <edomvd>Station on Newark Light Rail/subway</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>North Jersey Coast Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on North Jersey Coast Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Northeast Corridor</edomv>
+                                                						
+                        
+                        <edomvd>Station on Northeast Corridor Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Pascack Valley Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Pascack Valley Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PATCO Speedline</edomv>
+                                                						
+                        
+                        <edomvd>Station on PATCO line; Delaware River Port Authority</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>PATH</edomv>
+                                                						
+                        
+                        <edomvd>Station on Port Authority Trans Hudson Line; Port Authority of NY &amp; NJ</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Port Jervis Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Port Jervis Line (only)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Raritan Valley Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Raritan Valley Line (only)</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>River LINE</edomv>
+                                                						
+                        
+                        <edomvd>Station on River LINE</edomvd>
+                                                						
+                        
+                        <edomvds>NJ TRANSIT</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>West Trenton Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on West Trenton Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Trenton Line</edomv>
+                                                						
+                        
+                        <edomvd>Station on Trenton Line</edomvd>
+                                                						
+                        
+                        <edomvds>NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>STATION</attrlabl>
+                <attrdef>Name of the station</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Text string of station name with abbreviations and proper case</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>MUN_LABEL</attrlabl>
+                <attrdef>Name of municipality in which the station is located</attrdef>
+                <attrdefs>NJ Department of State, Office for Planning Advocacy</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <codesetd>
+                                                						
+                        
+                        <codesetn>Municipalities of New Jersey, New Jersey State Plane NAD83, boundary feature class</codesetn>
+                                                						
+                        
+                        <codesets>NJOGIS</codesets>
+                                                					
+                    
+                    </codesetd>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>COUNTY</attrlabl>
+                <attrdef>Name of county in which the station is located</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>County names in all capital letters</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>ATIS_ID</attrlabl>
+                <attrdef>Unique identifier for the station record</attrdef>
+                <attrdefs>NJ TRANSIT</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Text string of unique ID. Format varies by type of rail (NJT, NJT light rail, PATH, PATCO)</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>AMTRAK</attrlabl>
+                <attrdef>Station also accesses AMTRAK service</attrdef>
+                <attrdefs>NJOGIS</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>Y</edomv>
+                                                						
+                        
+                        <edomvd>Yes, station accesses AMTRAK trains</edomvd>
+                                                						
+                        
+                        <edomvds>NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+                <attrdomv>
+                                        					
+                    
+                    <edom>
+                                                						
+                        
+                        <edomv>N</edomv>
+                                                						
+                        
+                        <edomvd>No, station does not access AMTRAK trains</edomvd>
+                                                						
+                        
+                        <edomvds>NJOGIS</edomvds>
+                                                					
+                    
+                    </edom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+            <attr>
+                <attrlabl>SHAPE</attrlabl>
+                <attrdef>Feature geometry.</attrdef>
+                <attrdefs>ESRI</attrdefs>
+                <attrdomv>
+                                        					
+                    
+                    <udom>Coordinates defining the features.</udom>
+                                        				
+                
+                </attrdomv>
+            </attr>
+        </detailed>
+    </eainfo>
+    <distinfo>
+        <distrib>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ TRANSIT,Transportation GIS</cntorg>
+                    <cntper>Harry Brown</cntper>
+                </cntorgp>
+                <cntpos>Manager</cntpos>
+                <cntaddr>
+                    <addrtype>mailing and physical</addrtype>
+                    <address>One Penn Plaza East</address>
+                    <city>Newark</city>
+                    <state>NJ</state>
+                    <postal>07105</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(973) 491-8986</cntvoice>
+                <cntemail>htbrown@njtransit.com</cntemail>
+            </cntinfo>
+        </distrib>
+        <resdesc>Downloadable Data</resdesc>
+        <distliab>See conditions and disclaimers on NJ TRANSIT developer Web site.</distliab>
+        <stdorder>
+            <digform>
+                <digtinfo>
+                    <formname>GTFS</formname>
+                    <filedec>zip</filedec>
+                </digtinfo>
+                <digtopt>
+                    <onlinopt>
+                        <computer>
+                            <networka>
+                                <networkr>https://www.njtransit.com/mt/mt_servlet.srv?hdnPageAction=MTDevLoginTo</networkr>
+                            </networka>
+                        </computer>
+                    </onlinopt>
+                </digtopt>
+            </digform>
+            <fees>None</fees>
+            <ordering>In order to access GTFS data, you must sign up for an account on the NJ TRANSIT site for developers at https://www.njtransit.com/mt/mt_servlet.srv?hdnPageAction=MTDevLoginTo After login the page provides access to downloads of zipped GTFS data for rail and bus, including schedule information; instructions for the DepartureVision Web Service; RSS Feeds of Travel Advisories for Rail, Bus, Light Rail; and RSS Feed of Customer Notices for All Modes.</ordering>
+        </stdorder>
+        <availabl>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+        </availabl>
+    </distinfo>
+    <distinfo>
+        <distrib>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                </cntorgp>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>NJ</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>(609) 633-9103</cntvoice>
+                <cntfax>(609) 633-0200</cntfax>
+                <cntemail>njgin@oit.nj.gov</cntemail>
+            </cntinfo>
+        </distrib>
+        <resdesc>Downloadable Data</resdesc>
+        <distliab>See conditions and disclaimers on NJ TRANSIT developer Web site.</distliab>
+        <stdorder>
+            <digform>
+                <digtinfo>
+                    <formname>AVSHP</formname>
+                    <formvern>10.5.1</formvern>
+                    <filedec>zip</filedec>
+                </digtinfo>
+                <digtopt>
+                    <onlinopt>
+                        <computer>
+                            <networka>
+                                <networkr>http://njogis-newjersey.opendata.arcgis.com</networkr>
+                            </networka>
+                        </computer>
+                        <computer>
+                            <networka>
+                                <networkr>http://newjersey.maps.arcgis.com/home/item.html?id=acf1aa71053f4bb48a1aad7034f35e48</networkr>
+                            </networka>
+                        </computer>
+                        <computer>
+                            <networka>
+                                <networkr>http://njogis-newjersey.opendata.arcgis.com/</networkr>
+                            </networka>
+                        </computer>
+                        <accinstr>State of New Jersey Office of GIS ArcGIS Online Site</accinstr>
+                    </onlinopt>
+                </digtopt>
+            </digform>
+            <fees>None</fees>
+            <ordering>Download from NJGIN Explorer data downloads page (NAD83 NJ State Plane feet version.)</ordering>
+        </stdorder>
+        <availabl>
+            <timeinfo>
+                <sngdate>
+                    <caldate>20180630</caldate>
+                </sngdate>
+            </timeinfo>
+        </availabl>
+    </distinfo>
+    <metainfo>
+        <metd>20180718</metd>
+        <metc>
+            <cntinfo>
+                <cntorgp>
+                    <cntorg>NJ Office of Information Technology, Office of GIS (NJOGIS)</cntorg>
+                    <cntper>Edith Konopka</cntper>
+                </cntorgp>
+                <cntpos>GIS Specialist</cntpos>
+                <cntaddr>
+                    <addrtype>mailing</addrtype>
+                    <address>PO Box 212</address>
+                    <city>Trenton</city>
+                    <state>New Jersey</state>
+                    <postal>08625-0212</postal>
+                    <country>US</country>
+                </cntaddr>
+                <cntvoice>609.777.3774</cntvoice>
+                <cntfax>609.633.0400</cntfax>
+                <cntemail>edith.konopka@tech.nj.gov</cntemail>
+                <cntinst>Email is preferred. Metadata information provided by Rick Cippoletti and Glenn Newman of NJ TRANSIT - Geographic Information Systems. Most attribute descriptions by Steven Karp and/or Yelena Pikovskaya.</cntinst>
+            </cntinfo>
+        </metc>
+        <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+        <metstdv>FGDC-STD-001-1998</metstdv>
+        <mettc>local time</mettc>
+        <metsi>
+            <metscs>ArcGIS</metscs>
+            <metsc>Unclassified</metsc>
+            <metshd>no special handling required</metshd>
+        </metsi>
+    </metainfo>
+</metadata>
