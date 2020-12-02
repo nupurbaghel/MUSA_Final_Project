@@ -1,5 +1,5 @@
 ---
-title: "Forecast Metro train delays in and around NYC"
+  title: "Forecast Metro train delays in and around NYC"
 author: "Nupur Baghel, Shivani Rai"
 date: "December 15th, 2020"
 output: 
@@ -9,9 +9,9 @@ toc_float: true
 code_folding: "hide"
 code_download: true
 ---
-
   
-```{r setup, include=FALSE}
+  
+  ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -170,23 +170,23 @@ ggplot() +
 #amtrak_type_line <- dat %>% filter (type == 'Amtrak')
 #dat_amtrak <- subset(dat, type == 'Amtrak')
 #dat_amtrak_from <- dat_amtrak %>%
-  #left_join(amtrak, by = c('from' = 'CITY2'))
+#left_join(amtrak, by = c('from' = 'CITY2'))
 #dat_amtrak_to <- dat_amtrak %>%
-  #left_join(amtrak, by = c('to' = 'CITY2'))
+#left_join(amtrak, by = c('to' = 'CITY2'))
 
 
 dat <- dat %>%
   mutate(new_line_name_geo = case_when(
-                  line == 'atl. city line' ~ 'ATLANTIC CITY RAIL LINE',
-                  line == 'bergen co. line' ~ 'BERGEN COUNTY LINE',
-                  line == 'main line' ~ 'MAIN LINE',
-                  line == 'montclair-boonton' ~ 'MONTCLAIR BOONTON LINE',
-                  line == 'morristown line' ~ 'MORRIS & ESSEX',
-                  line == 'no jersey coast' ~ 'NORTH JERSEY COAST LINE',
-                  line == 'northeast corrdr' ~ 'NORTHEAST CORRIDOR LINE',
-                  line == 'pascack valley' ~ 'PASCACK VALLEY LINE',
-                  line == 'raritan valley' ~ 'RARITAN VALLEY LINE',
-                  ))
+    line == 'atl. city line' ~ 'ATLANTIC CITY RAIL LINE',
+    line == 'bergen co. line' ~ 'BERGEN COUNTY LINE',
+    line == 'main line' ~ 'MAIN LINE',
+    line == 'montclair-boonton' ~ 'MONTCLAIR BOONTON LINE',
+    line == 'morristown line' ~ 'MORRIS & ESSEX',
+    line == 'no jersey coast' ~ 'NORTH JERSEY COAST LINE',
+    line == 'northeast corrdr' ~ 'NORTHEAST CORRIDOR LINE',
+    line == 'pascack valley' ~ 'PASCACK VALLEY LINE',
+    line == 'raritan valley' ~ 'RARITAN VALLEY LINE',
+  ))
 dat_nj <- subset(dat, type != 'Amtrak')
 
 dat_nj_line <- dat_nj %>%
@@ -302,7 +302,40 @@ ggplot(delay_train, aes(total_delay)) +
 
 ### Reported Delays per Day
 
+```{r}
+dat_njstation <- dat_njstation %>%
+  mutate(delay_Y.N = ifelse(delay_minutes == 0.00, 0, 1))
+no_delay_per_day <- dat_njstation %>%
+  mutate(date = date(scheduled_time)) %>%
+  select(delay_Y.N, date) %>%
+  group_by(date) %>%
+  summarize(total_delay = sum(delay_Y.N))
+
+ggplot(data = no_delay_per_day, aes(x = date, y = total_delay)) + geom_line() + geom_point() +
+labs(title="Total Number of Delays", x="Date", y="Delays") + plotTheme
+
+```
+
 ### Total Delays in Minutes per Day
+
+```{r message=FALSE, warning=FALSE}
+delay_per_day <- dat_njstation %>%
+  mutate(date = date(scheduled_time)) %>%
+  select(delay_minutes, date) %>%
+  group_by(date) %>%
+  summarize(total_delay = sum(delay_minutes),
+            average_delay = mean(delay_minutes))
+
+grid.arrange(
+ggplot(data = delay_per_day, aes(x = date, y = total_delay)) + geom_line() + geom_point() +
+labs(title="Total Delay", x="Date", y="Delay (Minutes)") + plotTheme,
+ggplot(data = delay_per_day, aes(x = date, y = average_delay)) + geom_line() + geom_point() +
+labs(title="Average Delay", x="Date", y="Delay (Minutes)") + plotTheme,
+top="Total and Mean Delay - 1st to 31st March, 2018")
+  
+```
+
+
 
 
 
