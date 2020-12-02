@@ -109,6 +109,7 @@ census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
 # Import Data
 
 ## Kaggle Train Delay dataset
+
 ```{r}
 dat = read.csv('archive/2018_03.csv')
 
@@ -119,6 +120,7 @@ dat$actual_time = as_date(dat$actual_time)
 ```
 
 ## New Jersey Rail Lines and Rail Stations dataset
+
 ```{r}
 njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
   st_transform('EPSG:2236')
@@ -203,7 +205,9 @@ nas <- dat_njstation %>%
 ```
 
 ## Census Data
+
 Collecting census data for States - New Jersey, New York and Pennsylvania
+
 ```{r get_census, message=FALSE, warning=FALSE, cache=TRUE}
 census <- 
   get_acs(geography = "tract", 
@@ -251,10 +255,12 @@ ggplot() +
 
 
 ## Weather Data
+
 Collecting weather data for Trenton for the same duration as our original data set (March 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study it would make sense to include other location's weather data as well.
 
 ```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
-weather.Panel <- 
+#Every hour
+weather.Panel_hourly <- 
   riem_measures(station = "TTN", date_start = "2018-03-01", date_end = "2018-03-31") %>%
   dplyr::select(valid, tmpf, p01i, sknt)%>%
   replace(is.na(.), 0) %>%
@@ -266,24 +272,71 @@ weather.Panel <-
               Precipitation = sum(p01i),
               Wind_Speed = max(sknt)) %>%
     mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
-glimpse(weather.Panel)
+glimpse(weather.Panel_hourly)
+#Every day
+weather.Panel_daily <- 
+  riem_measures(station = "TTN", date_start = "2018-03-01", date_end = "2018-03-31") %>%
+  dplyr::select(valid, tmpf, p01i, sknt)%>%
+  replace(is.na(.), 0) %>%
+    mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
+    mutate(week = week(interval60),
+           dotw = wday(interval60, label=TRUE)) %>%
+    group_by(date(interval60)) %>%
+    summarize(Temperature = max(tmpf),
+              Precipitation = sum(p01i),
+              Wind_Speed = max(sknt)) %>%
+    mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
+glimpse(weather.Panel_daily)
+```
+
+## Time-space Panel + Weather 
+
+```{r}
+dat_njstation$date <- as.Date(dat_njstation$date)
+dat_njstation <- 
+  dat_njstation %>%
+  left_join(weather.Panel_daily, by = c('date' = 'date(interval60)'))
 ```
 
 ## Exploratory Data Analysis
 
 ### Weather Panel 
+
 ```{r}
 grid.arrange(
-  ggplot(weather.Panel, aes(interval60,Precipitation)) + geom_line() + 
+  ggplot(weather.Panel_hourly, aes(interval60,Precipitation)) + geom_line() + 
   labs(title="Precipitation", x="Hour", y="Precipitation") + plotTheme,
-  ggplot(weather.Panel, aes(interval60,Wind_Speed)) + geom_line() + 
+  ggplot(weather.Panel_hourly, aes(interval60,Wind_Speed)) + geom_line() + 
     labs(title="Wind Speed", x="Hour", y="Wind Speed") + plotTheme,
-  ggplot(weather.Panel, aes(interval60,Temperature)) + geom_line() + 
+  ggplot(weather.Panel_hourly, aes(interval60,Temperature)) + geom_line() + 
     labs(title="Temperature", x="Hour", y="Temperature") + plotTheme,
   top="Weather Data - Trenton TTN - March, 2018")
 ```
 
+### Delay vs Precipitation (Daily)
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Precipitation = first(Precipitation)) %>%
+  mutate(isPrecip = ifelse(Precipitation > 0,"Rain/Snow", "None")) %>%
+  group_by(isPrecip) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isPrecip, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does precipitation influence delay?",
+           x="Precipitation", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Delay vs Windspeed (Daily)
+
+
+### Delay vs Temperature (Daily)
+
+
 ### Distribution of Total delay for different trains
+
 ```{r message=FALSE, warning=FALSE}
 delay_train <- dat_njstation %>%
   mutate(date = date(scheduled_time)) %>%
@@ -297,12 +350,15 @@ ggplot(delay_train, aes(total_delay)) +
 
 ### Distribution for Time of Day
 
+Seems like we dont have time of the day - lol
 
 ### Distribution across Time and Space
 
+
+
 ### Reported Delays per Day
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation <- dat_njstation %>%
   mutate(delay_Y.N = ifelse(delay_minutes == 0.00, 0, 1))
 no_delay_per_day <- dat_njstation %>%
@@ -335,16 +391,36 @@ top="Total and Mean Delay - 1st to 31st March, 2018")
   
 ```
 
+### Delays at stations - for all lines 
+
+```{r}
+dat_njstation <- dat_njstation %>% 
+  mutate(Geom = gsub('c[()°]', '', geometry)) %>% 
+  separate(col = Geom, into = c('Latitude', 'Long_delete'), sep = '\\,')
+dat_njstation <- extract(dat_njstation, geometry, into = c('Lat_delete', 'Longitude'), '\\((.*),(.*)\\)', conv = T)
 
 
-
+dat_njstation %>% 
+  group_by(from) %>%
+  summarize(mean_delay = mean(delay_minutes, na.rm = TRUE))%>%
+ggplot(.)+
+  geom_sf(data = census %>% st_transform('EPSG:2236'), color = "grey", fill = "transparent")+
+  geom_point(aes(x = 'Latitude', y= 'Longitude', color = mean_delay), 
+             fill = "transparent", alpha = 0.8)+
+  scale_colour_viridis(direction = -1,
+  discrete = FALSE, option = "D")+
+  labs(title="Mean Abs Error, Test Set, Model 5")+
+  mapTheme
+```
 
 
 +
 123.0232
 
 ## Feature Engineering
+
 ### Distance between Stations
+
 ```{r}
 
 ```
