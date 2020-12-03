@@ -110,12 +110,33 @@ census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
 
 ## Kaggle Train Delay dataset
 ```{r}
-dat = read.csv('archive/2018_03.csv')
+# dat_2018_03 = read.csv('archive/2018_03.csv')
+# dat_2018_04 = read.csv('archive/2018_04.csv')
+# 
+# dat <- rbind(dat_2018_03, dat_2018_04)
 
-#Convert all lines to lower case
-dat$line = tolower(dat$line)
-dat$scheduled_time = as_date(dat$scheduled_time)
-dat$actual_time = as_date(dat$actual_time)
+dat <- read.csv('archive/2018_04.csv')
+dat <- dat %>%
+  mutate(line = tolower(line),
+         scheduled_time =  as_datetime(scheduled_time),
+         actual_time = as_datetime(actual_time),
+         date = as_date(scheduled_time),
+         interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour"),
+         dotw =  wday(scheduled_time, label=TRUE),
+         week = week(scheduled_time))
+
+unique(dat %>% select(week, date, dotw))
+```
+
+```{r}
+M <- sapply(dat %>% filter(type == "NJ Transit"), function(x) sum(is.na(x)));
+print(M[M>0][[1]])
+print(nrow(dat %>% filter(type == "NJ Transit")))
+
+## Amtrak lines do not have scheduled time
+M <- sapply(dat %>% filter(type != "NJ Transit"), function(x) sum(is.na(x)));
+print(M[M>0][[1]])
+print(nrow(dat %>% filter(type != "NJ Transit")))
 ```
 
 ## New Jersey Rail Lines and Rail Stations dataset
@@ -187,16 +208,17 @@ dat <- dat %>%
                   line == 'pascack valley' ~ 'PASCACK VALLEY LINE',
                   line == 'raritan valley' ~ 'RARITAN VALLEY LINE',
                   ))
-dat_nj <- subset(dat, type != 'Amtrak')
 
-dat_nj_line <- dat_nj %>%
-  left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
+dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit() 
+
+# dat_nj_line <- dat_nj %>%
+#   left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
 
 dat_njstation <- dat_nj %>%
   left_join(njstations, by = c('from' = 'STATION'))
 
-dat_njstation_to <- dat_nj %>%
-  left_join(njstations, by = c('to' = 'STATION'))
+# dat_njstation_to <- dat_nj %>%
+#   left_join(njstations, by = c('to' = 'STATION'))
 
 nas <- dat_njstation %>%
   filter (is.na(COUNTY))
@@ -232,12 +254,13 @@ census <-
          Percent_Taking_Public_Trans = Total_Public_Trans / Means_of_Transport) %>% 
   st_transform('EPSG:2236')
 ```
+
 ```{r}
 subset_census <- census[st_crop(census, st_bbox(njstations)),]
 
-mapview(st_bbox(census)) +
-  mapview(njstations, cex = 2) +
-  mapview(st_bbox(subset_census), col.regions = "orange")
+# mapview(st_bbox(census)) +
+#   mapview(njstations, cex = 2) +
+#   mapview(st_bbox(subset_census), col.regions = "orange")
 
 ```
 
@@ -254,8 +277,9 @@ ggplot() +
 Collecting weather data for Trenton for the same duration as our original data set (March 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study it would make sense to include other location's weather data as well.
 
 ```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
-weather.Panel <- 
-  riem_measures(station = "TTN", date_start = "2018-03-01", date_end = "2018-03-31") %>%
+#Every hour
+weather.Panel_hourly <- 
+  riem_measures(station = "TTN", date_start = "2018-04-01", date_end = "2018-05-02") %>%
   dplyr::select(valid, tmpf, p01i, sknt)%>%
   replace(is.na(.), 0) %>%
     mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
@@ -266,20 +290,98 @@ weather.Panel <-
               Precipitation = sum(p01i),
               Wind_Speed = max(sknt)) %>%
     mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
-glimpse(weather.Panel)
+glimpse(weather.Panel_hourly)
+#Every day
+weather.Panel_daily <- 
+  riem_measures(station = "TTN", date_start = "2018-04-01", date_end = "2018-05-02") %>%
+  dplyr::select(valid, tmpf, p01i, sknt)%>%
+  replace(is.na(.), 0) %>%
+    mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
+    mutate(week = week(interval60),
+           dotw = wday(interval60, label=TRUE)) %>%
+    group_by(date(interval60)) %>%
+    summarize(Temperature = max(tmpf),
+              Precipitation = sum(p01i),
+              Wind_Speed = max(sknt)) %>%
+    mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
+glimpse(weather.Panel_daily)
+```
+
+## Time-space Panel + Weather 
+
+```{r}
+dat_njstation$date <- as.Date(dat_njstation$date)
+dat_njstation <- 
+  dat_njstation %>%
+  left_join(weather.Panel_daily, by = c('date' = 'date(interval60)'))
 ```
 
 ## Exploratory Data Analysis
 
 ### Weather Panel 
-```{r}
 
+```{r}
+grid.arrange(
+  ggplot(weather.Panel_hourly, aes(interval60,Precipitation)) + geom_line() + 
+  labs(title="Precipitation", x="Hour", y="Precipitation") + plotTheme,
+  ggplot(weather.Panel_hourly, aes(interval60,Wind_Speed)) + geom_line() + 
+    labs(title="Wind Speed", x="Hour", y="Wind Speed") + plotTheme,
+  ggplot(weather.Panel_hourly, aes(interval60,Temperature)) + geom_line() + 
+    labs(title="Temperature", x="Hour", y="Temperature") + plotTheme,
+  top="Weather Data - Trenton TTN - March, 2018")
+```
+
+### Delay vs Precipitation (Daily)
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Precipitation = first(Precipitation)) %>%
+  mutate(isPrecip = ifelse(Precipitation > 0,"Rain/Snow", "None")) %>%
+  group_by(isPrecip) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isPrecip, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does precipitation influence delay?",
+           x="Precipitation", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Delay vs Windspeed (Daily)
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Wind_Speed = first(Wind_Speed)) %>%
+  mutate(isWind = ifelse(Wind_Speed > 20,"Windy", "None")) %>%
+  group_by(isWind) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isWind, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does windspeed influence delay?",
+           x="Windspeed", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Delay vs Temperature (Daily)
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Temperature = first(Temperature)) %>%
+  mutate(isHot = ifelse(Temperature > 60,"Hot", "None")) %>%
+  group_by(isHot) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isHot, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does temperature influence delay?",
+           x="Temperature", y="Mean Delay (Minutes)") +
+      plotTheme
 ```
 
 ### Distribution of Total delay for different trains
 ```{r}
 delay_train <- dat_njstation %>%
-  mutate(date = date(scheduled_time)) %>%
+  mutate(date = as_date(scheduled_time)) %>%
   select(train_id, delay_minutes, date) %>%
   group_by(train_id, date) %>%
   summarize(total_delay = sum(delay_minutes))
@@ -288,6 +390,14 @@ ggplot(delay_train, aes(total_delay)) +
   geom_histogram()
 ```
 
+```{r}
+head(delay_train %>% filter(train_id=="0041") %>% arrange(date), 40)
+```
+
+```{r}
+dat_njstation %>%
+  filter(train_id == "0041", as_date(scheduled_time) == as_date("2018-03-02"))
+```
 ### Distribution for Time of Day
 
 ### Distribution across Time and Space
@@ -301,10 +411,163 @@ ggplot(delay_train, aes(total_delay)) +
 
 ### Correlation plot for Continuous numeric features
 
-## Training Model
+## Building Model
 
 ### Split Data into Train and Test
-### 
+```{r}
+dat.Train <- filter(dat_njstation, week < 17)
+dat.Test <- filter(dat_njstation, week >= 17)
+```
+
+```{r}
+rbind(
+  mutate(dat.Train, Legend = "Training"), 
+  mutate(dat.Test, Legend = "Testing")) %>%
+    group_by(Legend, interval60) %>% 
+      summarize(Trip_Delay = mean(delay_minutes)) %>%
+      ungroup() %>% 
+      ggplot(aes(interval60, Trip_Delay, color = Legend)) + geom_line() +
+        scale_colour_manual(values = palette2) +
+        labs(title="Mean Delay across all train lines",
+             x="Day", y="Trip Delay (minutes)") +
+        plotTheme + theme(panel.grid.major = element_blank())
+```
+
+```{r}
+dat_njstation %>%
+  group_by(line, interval60) %>% 
+  summarize(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>% 
+  ggplot(aes(interval60, Trip_Delay, color = line)) + geom_line() +
+        #scale_colour_manual(values = palette2) +
+  labs(title="Mean Delay across all train lines",
+        x="Day", y="Trip Delay (minutes)") +
+  plotTheme + theme(panel.grid.major = element_blank())
+```
+
+### Training model : First model
+Trained using actual delay_minutes as the dependent variable.
+
+```{r}
+# reg1 <- 
+#   lm(delay_minutes ~ train_id + dotw + Wind_Speed + Temperature + Precipitation, data = dat.Train)
+# 
+# summary(reg1)$r.squared
+# summary(reg1)$adj.r.squared
+```
+
+```{r}
+reg2 <- 
+  lm(delay_minutes ~ from + to + dotw + train_id + Wind_Speed + Temperature + Precipitation,
+     data = dat.Train)
+
+summary(reg2)$r.squared
+summary(reg2)$adj.r.squared
+```
+
+### Predicting for test data
+We use nested data for the testing part. 
+
+```{r nest_data, cache = TRUE, warning = FALSE, message = FALSE}
+dat.Test.weekNest <- 
+  dat.Test %>%
+  nest(-week) 
+```
+
+When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
+
+```{r predict_function, cache = TRUE}
+model_pred <- function(dat, fit){
+   pred <- predict(fit, newdata = dat)}
+```
+
+
+```{r do_predicitons, cache = TRUE}
+week_predictions <- 
+  dat.Test.weekNest %>% 
+    mutate(#ATime_FE = map(.x = data, fit = reg1, .f = model_pred),
+           BSpace_FE = map(.x = data, fit = reg2, .f = model_pred),
+           #CTime_Space_FE = map(.x = data, fit = reg3, .f = model_pred),
+           #DTime_Space_FE_timeLags = map(.x = data, fit = reg4, .f = model_pred),
+           #ETime_Space_FE_timeLags_holidayLags = map(.x = data, fit = reg5, .f = model_pred)
+           ) %>% 
+    gather(Regression, Prediction, -data, -week) %>%
+    mutate(Observed = map(data, pull, delay_minutes),
+           Absolute_Error = map2(Observed, Prediction,  ~ abs(.x - .y)),
+           MAE = map_dbl(Absolute_Error, mean, na.rm = TRUE),
+           sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE))
+week_predictions
+```
+### Cross validation
+
+We perform cross validation (LOGO) across time by grouping them by the hours.  
+
+```{r}
+crossValidate <- function(dataset, id, dependentVariable, indVariables) {
+  
+  allPredictions <- data.frame()
+  cvID_list <- unique(dataset[[id]])
+  
+  for (i in cvID_list) {
+    
+    thisFold <- i
+    #cat("This hold out fold is", thisFold, "\n")
+    
+    fold.train <- filter(dataset, dataset[[id]] != thisFold) %>% as.data.frame() %>% 
+      dplyr::select(indVariables, dependentVariable)
+    fold.test  <- filter(dataset, dataset[[id]] == thisFold) %>% as.data.frame() %>% 
+      dplyr::select(indVariables, dependentVariable)
+    regression <-
+      lm(delay_minutes ~ ., family = "poisson", data=fold.train)
+    
+    thisPrediction <- 
+      mutate(fold.test, Prediction = predict(regression, fold.test, type = "response", na.action = na.pass))
+    
+    allPredictions <-
+      rbind(allPredictions, thisPrediction)
+    
+  }
+  return(allPredictions)
+}
+```
+
+```{r }
+
+find_na_rows <- function(data){
+  M <- sapply(data, function(x) sum(is.na(x)));
+  print(M[M>0][[1]])
+}
+
+#nas <- dat_njstation %>% filter (is.na(Temperature))
+
+# find_na_rows(dat_njstation %>% select("dotw"))
+# find_na_rows(dat_njstation %>% select("Temperature"))
+# find_na_rows(dat_njstation %>% select("Precipitation"))
+# find_na_rows(dat_njstation %>% select("delay_minutes"))
+#find_na_rows(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes"))
+#print(nrow(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes")))
+```
+
+
+```{r message=FALSE, warning=FALSE, results=F}
+ind.vars <- c("dotw", "Temperature","Precipitation")
+
+reg.cv <- crossValidate(
+  dataset = dat_njstation,
+  id = "dotw",
+  dependentVariable = "delay_minutes",
+  indVariables = ind.vars) %>%
+  dplyr::select(delay_minutes, Prediction, dotw)
+```
+
+<!-- ### Training model : Second model -->
+
+<!-- Trained using estimated delay as the dependent variable. -->
+<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
+<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
+
+
+### Evaluation
 
 
 There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
