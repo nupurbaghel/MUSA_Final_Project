@@ -155,14 +155,13 @@ njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_
 njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
   st_transform('EPSG:2236') %>%
   filter(AMTRAK != "Y") %>%
-  select(STATION, LATITUDE, LONGITUDE, COUNTY, geometry, RAIL_LINE) 
+  select(STATION, COUNTY, geometry, RAIL_LINE) 
 
 njstations.first <- njstations[match(unique(njstations$STATION), njstations$STATION),]
 
 amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
 ```
-
 
 ```{r}
 hist(dat$delay_minutes)
@@ -361,7 +360,7 @@ grid.arrange(
     labs(title="Wind Speed", x="Hour", y="Wind Speed") + plotTheme,
   ggplot(weather.Panel_hourly, aes(interval60,Temperature)) + geom_line() + 
     labs(title="Temperature", x="Hour", y="Temperature") + plotTheme,
-  top="Weather Data - Trenton TTN - March, 2018")
+  top="Weather Data - Trenton TTN - April, 2018")
 ```
 
 ### Delay vs Precipitation (Daily)
@@ -414,27 +413,72 @@ dat_njstation %>%
 ### Distribution of Total delay for different trains
 ```{r message=FALSE, warning=FALSE}
 delay_train <- dat_njstation %>%
-  mutate(date = as_date(scheduled_time)) %>%
   select(train_id, delay_minutes, date) %>%
   group_by(train_id, date) %>%
-  summarize(total_delay = sum(delay_minutes))
+  dplyr::summarize(total_delay = mean(delay_minutes))
 
 ggplot(delay_train, aes(total_delay)) +
   geom_histogram()
 ```
 
-```{r}
-head(delay_train %>% filter(train_id=="0041") %>% arrange(date), 40)
-```
-
+### Distribution for Time of Day
 ```{r}
 dat_njstation %>%
-  filter(train_id == "0041", as_date(scheduled_time) == as_date("2018-03-02"))
+        mutate(time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush"))%>%
+         group_by(interval60, to, time_of_day) %>%
+         dplyr::summarize(avg_delay = mean(delay_minutes)) %>%
+  ggplot()+
+  geom_histogram(aes(avg_delay), binwidth = 5)+
+  labs(title="Average delay across stations for different times of the day, 2018",
+       x="Delay (minutes)", 
+       y="Frequency")+
+  facet_wrap(~time_of_day)+
+  plotTheme
 ```
-### Distribution for Time of Day
 
+```{r}
+ggplot(
+     dat_njstation %>% mutate(hour = hour(scheduled_time)))+
+     geom_freqpoly(aes(hour, color = dotw), binwidth = 1)+
+    labs(title="Total Delay by day of week for NJ Transit stations, April 2018",
+       x="Hour", 
+       y="Delay (minutes)")+
+     plotTheme
+```
 
 ### Distribution across Time and Space
+Correct Latitude andLongitude transformations
+```{r}
+coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
+dat_njstation$LONGITUDE = coords$X
+dat_njstation$LATITUDE = coords$Y
+```
+
+Generate faceted plot of train delay for different times of day vs weekend and weekday 
+```{r}
+ggplot()+
+  geom_sf(data = subset_census, size = 0.2)+
+  geom_point(data = dat_njstation %>% 
+            mutate(hour = hour(scheduled_time),
+                weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
+                time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush"))%>%
+              group_by(from, LATITUDE, LONGITUDE, weekend, time_of_day) %>%
+              dplyr::summarize(avg_delay = mean(delay_minutes)),
+            aes(x=LONGITUDE, y = LATITUDE, color = avg_delay), 
+            fill = "transparent", alpha = 0.5, size = 1.5)+
+  scale_colour_viridis(direction = -1,
+  discrete = FALSE, option = "D")+
+  facet_grid(weekend ~ time_of_day)+
+  labs(title="Delay (minutes) at different times of the day, April 2018")+
+  mapTheme
+```
+
 
 ### Reported Delays per Day
 
@@ -607,9 +651,21 @@ dat_njstation <- dat_njstation %>%
 <!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
 <!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
 ```{r}
+dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+
 for(i in 1:nrow(dat_njstation)){
+    if((i %% 20000) == 0){
+      print(i)
+    }
     row <- dat_njstation[i,]
-    prev_row <- dat_njstation
+    if(row$from == row$to){
+      dat_njstation$diff_delay[i] = 0
+    }
+    else{
+      prev_row <- dat_njstation[i-1,]
+      dat_njstation$diff_delay[i] = row$actual_time - prev_row$actual_time - 
+        (row$scheduled_time - prev_row$scheduled_time)
+    }
 }
 ```
 
@@ -629,7 +685,7 @@ rbind(
   mutate(dat.Train, Legend = "Training"), 
   mutate(dat.Test, Legend = "Testing")) %>%
     group_by(Legend, interval60) %>% 
-      summarize(Trip_Delay = mean(delay_minutes)) %>%
+      dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
       ungroup() %>% 
       ggplot(aes(interval60, Trip_Delay, color = Legend)) + geom_line() +
         scale_colour_manual(values = palette2) +
@@ -641,7 +697,7 @@ rbind(
 ```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(line, interval60) %>% 
-  summarize(Trip_Delay = mean(delay_minutes)) %>%
+  dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
   ungroup() %>% 
   ggplot(aes(interval60, Trip_Delay, color = line)) + geom_line() +
         #scale_colour_manual(values = palette2) +
