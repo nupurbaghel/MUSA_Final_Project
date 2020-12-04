@@ -33,6 +33,7 @@ library(osmdata)
 library(gifski)
 library(gganimate)
 library(mapview)
+library(dplyr)
 
 mapTheme <- function(base_size = 12) {
   theme(
@@ -123,7 +124,7 @@ dat <- dat %>%
          date = as_date(scheduled_time),
          interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour"),
          dotw =  wday(scheduled_time, label=TRUE),
-         week = week(scheduled_time))
+         week = week(scheduled_time)) %>% distinct()
 
 unique(dat %>% select(week, date, dotw))
 ```
@@ -139,12 +140,25 @@ print(M[M>0][[1]])
 print(nrow(dat %>% filter(type != "NJ Transit")))
 ```
 
+```{r}
+dat_njstation[51,]
+```
+
+```{r}
+dat_njstation[52,]
+```
 ## New Jersey Rail Lines and Rail Stations dataset
 ```{r}
 njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
   st_transform('EPSG:2236')
+
 njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
-  st_transform('EPSG:2236')
+  st_transform('EPSG:2236') %>%
+  filter(AMTRAK != "Y") %>%
+  select(STATION, LATITUDE, LONGITUDE, COUNTY, geometry, RAIL_LINE) 
+
+njstations.first <- njstations[match(unique(njstations$STATION), njstations$STATION),]
+
 amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
 ```
@@ -214,8 +228,26 @@ dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit()
 # dat_nj_line <- dat_nj %>%
 #   left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
 
+# njstations <- njstations %>%
+#   mutate(new_line = case_when(
+#     RAIL_LINE == 'North Jersey Coast Line' ~ 'NORTH JERSEY COAST LINE',
+#     RAIL_LINE == 'NEC / NJCL' ~ 'NORTHEAST CORRIDOR LINE',
+#     RAIL_LINE == 'Northeast Corridor' ~ 'NORTHEAST CORRIDOR LINE',
+#     RAIL_LINE == 'Raritan Valley Line' ~ 'RARITAN VALLEY LINE',
+#     RAIL_LINE == 'Gladstone Branch/M&E' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Morristown Line/M&E' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Morris & Essex Line' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Montclair-Boonton Line/M&E' ~ 'MONTCLAIR BOONTON LINE',
+#     RAIL_LINE == 'Atlantic City Line' ~ 'ATLANTIC CITY RAIL LINE',
+#     RAIL_LINE == 'Main/Bergen Line' ~ 'MAIN LINE',
+#     RAIL_LINE == 'Pascack Valley Line' ~ 'PASCACK VALLEY LINE',
+#   ))
+# 
+# dat_njstation <- dat_nj %>%
+#   left_join(njstations, by = c('from' = 'STATION', 'new_line_name_geo' = 'new_line'))
+
 dat_njstation <- dat_nj %>%
-  left_join(njstations, by = c('from' = 'STATION'))
+  left_join(njstations.first, by = c('to' = 'STATION'))
 
 # dat_njstation_to <- dat_nj %>%
 #   left_join(njstations, by = c('to' = 'STATION'))
@@ -223,6 +255,7 @@ dat_njstation <- dat_nj %>%
 nas <- dat_njstation %>%
   filter (is.na(COUNTY))
 ```
+
 
 ## Census Data
 Collecting census data for States - New Jersey, New York and Pennsylvania
@@ -408,16 +441,178 @@ dat_njstation %>%
 ### Total Delays in Minutes per Day
 
 
-
-
-+
-123.0232
-
 ## Feature Engineering
 ### Distance between Stations
-```{r}
 
+These stations have missing Geometries
+```{r}
+unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
 ```
+
+```{r}
+# library(ggmap)
+# 
+# origAddress <- dat_njstation %>% filter(is.na(LATITUDE))
+# 
+# for(i in 1:nrow(origAddress))
+# {
+#   # Print("Working...")
+#   result <- geocode(origAddress$from[i], output = "latlona", source = "google")
+#   origAddress$lon[i] <- as.numeric(result[1])
+#   origAddress$lat[i] <- as.numeric(result[2])
+#   origAddress$geoAddress[i] <- as.character(result[3])
+# }
+```
+
+### Number of stations for a particular route
+```{r message=FALSE, warning=FALSE}
+## Check if same train runs multiple times on a particular day 
+# dat_njstation [duplicated(dat_njstation %>% select(date, train_id, from, to)),]
+
+dat_njstation <- dat_njstation %>%
+  mutate(station_count = 1) %>%
+  group_by(date, train_id) %>%
+  summarise(total_stops = sum(station_count, na.rm=T)) %>%
+  ungroup() %>%
+  right_join(dat_njstation)
+```
+
+### Lag Features
+```{r}
+dat_2months <- rbind(
+  read.csv('archive/2018_03.csv'),
+  read.csv('archive/2018_04.csv')
+)
+
+dat_2months <- dat_2months %>%
+  mutate(scheduled_time =  as_datetime(scheduled_time),
+         actual_time = as_datetime(actual_time),
+         date = as_date(scheduled_time),
+         interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour")) %>% 
+  distinct()
+```
+
+```{r eval=F, include=F}
+# start_date <- as_date('2018-04-01')
+# for(i in 1:nrow(dat_njstation))
+#   {
+#     cur_date <- dat_njstation$date[i]
+#     cur_train_id<- dat_njstation$train_id[i]
+#     cur_from <- dat_njstation$from[i]
+#     cur_to <- dat_njstation$to[i]
+#     
+#     dat_2months_filter <- dat_2months %>% 
+#       filter(
+#         date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
+#         train_id == cur_train_id, from == cur_from, to == cur_to) %>%
+#       select(date, delay_minutes)
+#     
+#     if(i %% 10000 == 0){
+#       print(i)
+#     }
+#     
+#     dat_njstation$lag_1day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 1) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_2day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 2) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_7day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 7) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_14day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 14) %>%
+#       select(delay_minutes)
+#   }
+```
+
+```{r eval=F}
+get_lagvars <- function(dat_njstation_row){
+    #print(dat_njstation_row)
+    cur_date <- dat_njstation_row$date
+    cur_train_id<- dat_njstation_row$train_id
+    cur_from <- dat_njstation_row$from
+    cur_to <- dat_njstation_row$to
+    
+    dat_2months_filter <- dat_2months %>% 
+      filter(
+        date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
+        train_id == cur_train_id, from == cur_from, to == cur_to) %>%
+      select(date, delay_minutes)
+
+    
+    lag_1day <- dat_2months_filter %>% 
+      filter(date == cur_date - 1) %>%
+      select(delay_minutes)
+    
+    if (dim(lag_1day)[1] == 0) { lag_1day <- NA }
+    else { lag_1day <- lag_1day[[1]] }
+    
+    lag_2day <- dat_2months_filter %>% 
+      filter(date == cur_date - 2) %>%
+      select(delay_minutes)
+    
+    if (dim(lag_2day)[1] == 0) { lag_2day <- NA }
+    else { lag_2day <- lag_2day[[1]] }
+    
+    lag_7day <- dat_2months_filter %>% 
+      filter(date == cur_date - 7) %>%
+      select(delay_minutes)
+    
+    if (dim(lag_7day)[1] == 0) { lag_7day <- NA }
+    else { lag_7day <- lag_7day[[1]] }
+    
+    lag_14day <- dat_2months_filter %>% 
+      filter(date == cur_date - 14) %>%
+      select(delay_minutes)
+    
+   if (dim(lag_14day)[1] == 0) { lag_14day <- NA }
+    else { lag_14day <- lag_14day[[1]] }
+    
+    return(list("lag_1day" = lag_1day, "lag_2day" = lag_2day, 
+                "lag_1week" = lag_7day, "lag_2week" = lag_14day))
+}
+
+#sampled_dat_njstation <- sample_n(dat_njstation, 10)
+
+#library(plyr)
+#Uncomment first time
+#dat_lag <- apply(dat_njstation, 1, get_lagvars)
+#result <- as.data.frame(do.call(rbind, dat_lag))
+```
+
+```{r eval=F, include=F}
+#write.csv(as.matrix(result %>% select(lag_1week, lag_2week)), file = "lag_variables_week.csv")
+#write.csv(as.matrix(result), file = "lag_variables.csv")
+#write.csv(as.matrix(dat_njstation), file = "dat_njstation.csv")
+```
+
+```{r include=F}
+lag_features <- read.csv(file = "lag_variables.csv",row.names=1)
+#dat_njstation <- cbind(dat_njstation, lag_features)
+```
+
+### Congestion variable
+For a particular station, how many trains cross in that particular hour?
+```{r}
+dat_njstation <- dat_njstation %>%
+  group_by(to, interval60) %>%
+  dplyr::summarise(congestion = n()) %>%
+  ungroup() %>% 
+  right_join(dat_njstation)
+```
+
+### Creating custom dependant variable - diff_delay
+
+<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
+<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
+```{r}
+for(i in 1:nrow(dat_njstation)){
+    row <- dat_njstation[i,]
+    prev_row <- dat_njstation
+}
+```
+
 
 ### Correlation plot for Continuous numeric features
 
@@ -443,7 +638,7 @@ rbind(
         plotTheme + theme(panel.grid.major = element_blank())
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(line, interval60) %>% 
   summarize(Trip_Delay = mean(delay_minutes)) %>%
@@ -473,6 +668,9 @@ reg2 <-
 
 summary(reg2)$r.squared
 summary(reg2)$adj.r.squared
+
+#[1] 0.1740455
+#[1] 0.1675164
 ```
 
 ### Predicting for test data
@@ -508,6 +706,7 @@ week_predictions <-
            sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE))
 week_predictions
 ```
+
 ### Cross validation
 
 We perform cross validation (LOGO) across time by grouping them by the hours.  
@@ -560,14 +759,16 @@ find_na_rows <- function(data){
 
 
 ```{r message=FALSE, warning=FALSE, results=F}
-ind.vars <- c("dotw", "Temperature","Precipitation")
+dat_njstation <- dat_njstation %>% 
+  mutate(dotw_id = wday(scheduled_time))
+
+ind.vars <- c("dotw_id", "Temperature","Precipitation", "train_id", "from", "to")
 
 reg.cv <- crossValidate(
   dataset = dat_njstation,
-  id = "dotw",
+  id = "dotw_id",
   dependentVariable = "delay_minutes",
-  indVariables = ind.vars) %>%
-  dplyr::select(delay_minutes, Prediction, dotw)
+  indVariables = ind.vars)
 ```
 
 <!-- ### Training model : Second model -->
@@ -575,7 +776,6 @@ reg.cv <- crossValidate(
 <!-- Trained using estimated delay as the dependent variable. -->
 <!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
 <!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
-
 
 ### Evaluation
 
