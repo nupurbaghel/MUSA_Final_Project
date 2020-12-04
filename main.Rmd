@@ -258,7 +258,7 @@ nas <- dat_njstation %>%
 
 ## Census Data
 Collecting census data for States - New Jersey, New York and Pennsylvania
-```{r get_census, message=FALSE, warning=FALSE, cache=TRUE}
+```{r get_census, message=FALSE, warning=FALSE}
 census <- 
   get_acs(geography = "tract", 
           variables = c("B01003_001", "B19013_001", 
@@ -268,8 +268,10 @@ census <-
           year = 2018, 
           state = c("NJ",'NY','PA'),
           geometry = TRUE, 
-          output = "wide") %>%
-  rename(Total_Pop =  B01003_001E,
+          output = "wide")
+
+census <- census %>%
+  dplyr::rename(Total_Pop =  B01003_001E,
          Med_Inc = B19013_001E,
          Med_Age = B01002_001E,
          White_Pop = B02001_002E,
@@ -318,7 +320,7 @@ weather.Panel_hourly <-
     mutate(week = week(interval60),
            dotw = wday(interval60, label=TRUE)) %>%
     group_by(interval60) %>%
-    summarize(Temperature = max(tmpf),
+    dplyr::summarize(Temperature = max(tmpf),
               Precipitation = sum(p01i),
               Wind_Speed = max(sknt)) %>%
     mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
@@ -332,7 +334,7 @@ weather.Panel_daily <-
     mutate(week = week(interval60),
            dotw = wday(interval60, label=TRUE)) %>%
     group_by(date(interval60)) %>%
-    summarize(Temperature = max(tmpf),
+    dplyr::summarize(Temperature = max(tmpf),
               Precipitation = sum(p01i),
               Wind_Speed = max(sknt)) %>%
     mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
@@ -368,11 +370,11 @@ grid.arrange(
 ```{r}
 dat_njstation %>%
   group_by(date) %>% 
-  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+  dplyr::summarize(delay_minutes = mean(delay_minutes, na.rm=T),
             Precipitation = first(Precipitation)) %>%
   mutate(isPrecip = ifelse(Precipitation > 0,"Rain/Snow", "None")) %>%
   group_by(isPrecip) %>%
-  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+  dplyr::summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
     ggplot(aes(isPrecip, Mean_delay)) + geom_bar(stat = "identity") +
       labs(title="Does precipitation influence delay?",
            x="Precipitation", y="Mean Delay (Minutes)") +
@@ -633,38 +635,83 @@ get_lagvars <- function(dat_njstation_row){
 
 ```{r include=F}
 lag_features <- read.csv(file = "lag_variables.csv",row.names=1)
-#dat_njstation <- cbind(dat_njstation, lag_features)
+dat_njstation <- cbind(dat_njstation, lag_features)
 ```
 
 ```{r}
 plotData.lag <- as.data.frame(dat_njstation) %>%
   filter(week == 17) %>%
-  dplyr::select(lag_1day, lag_7day, lag14day, delay_minutes) %>%
+  dplyr::select(lag_1day, lag_1week, lag_2week, delay_minutes) %>%
   gather(Variable, Value, -delay_minutes) %>%
-  mutate(Variable = fct_relevel(Variable, "lag_1day","lag_7day","lag_14day",
-                                          "lag4Hours","lag12Hours","lag1day"))
+  mutate(Variable = fct_relevel(Variable, "lag_1day","lag_1week","lag_2week"))
 
 #Correlation scatter plots
 plotData.lag %>% 
-  ggplot(aes(Value, Trip_Count)) +
+  ggplot(aes(Value, delay_minutes)) +
   geom_point(size = .5) + geom_smooth(method = "lm", se=F, colour = "#FA7800") +
   facet_wrap(~Variable, ncol = 3, scales = "free") +
-  labs(title = "Bike Share Trip Count as a function of time lags",
-       subtitle = "One week in December, 2018") +
+  labs(title = "Delay per station as a function of time lags",
+       subtitle = "One week in April, 2018") +
   plotTheme
 ```
 
 ### Congestion variable
 For a particular station, how many trains cross in that particular hour?
 ```{r}
-dat_njstation <- dat_njstation %>%
+njstation_cong <- dat_njstation %>%
   group_by(to, interval60) %>%
   dplyr::summarise(congestion = n()) %>%
-  ungroup() %>% 
-  right_join(dat_njstation)
+  ungroup()
+
+dat_njstation <- dat_njstation %>% left_join(njstation_cong)
 ```
 
+```{r}
+one_day <- 
+  dat_njstation %>%
+  filter(date == as_date('2018-04-15'))
 
+one_day.panel <-
+  expand.grid(
+    interval60 = unique(one_day$interval60),
+    to = unique(one_day$to))
+```
+
+```{r}
+ride.animation.data <-
+  mutate(one_day, Congestion_Counter = 1) %>%
+  right_join(one_day.panel) %>% 
+  group_by(interval60, to, LATITUDE, LONGITUDE) %>%
+  dplyr::summarize(Congestion = sum(Congestion_Counter, na.rm=T)) %>% 
+  ungroup() %>% 
+  na.omit() %>%
+  st_as_sf(., coords = c("LONGITUDE", "LATITUDE"), crs = 3701) %>%
+  st_set_crs(st_crs(subset_census)) %>%
+  mutate(Trains = case_when(Congestion == 0 ~ "0 trains",
+                           Congestion > 0 & Congestion <= 2 ~ "1-2 trains",
+                           Congestion > 2 & Congestion <= 4 ~ "3-4 trains",
+                           Congestion > 4 & Congestion <= 6 ~ "5-6 trains",
+                           Congestion > 6 ~ "6+ trains")) %>%
+  mutate(Delays = factor(Trains))
+```
+
+```{r}
+rideshare_animation <-
+  ggplot() +
+  geom_sf(data = subset_census) +
+  geom_sf(data = ride.animation.data, aes(color = Trains)) +
+  scale_fill_manual(values = palette3) +
+  labs(title = "Number of trains in every station for one day in April 2018",
+       subtitle = "1 hour intervals: {current_frame}") +
+  transition_manual(interval60) +
+  mapTheme
+
+animate(rideshare_animation, duration=20, renderer = gifski_renderer())
+```
+
+```{r}
+#anim_save("trains_local", rideshare_animation, duration=20, renderer = gifski_renderer())
+```
 
 ### Creating custom dependant variable - diff_delay
 
@@ -726,6 +773,30 @@ dat_njstation %>%
   plotTheme + theme(panel.grid.major = element_blank())
 ```
 
+```{r message=FALSE, warning=FALSE}
+dat_njstation %>%
+  group_by(line, date) %>% 
+  filter(line == "northeast corrdr") %>%
+  dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>% 
+  ggplot(aes(date, Trip_Delay, color = line)) + geom_line(size=1) +
+  # scale_x_date(
+  #   breaks = function(x) seq.Date(from = min(x), to = max(x), by = "5 days"),
+  #   minor_breaks = function(x) seq.Date(from = min(x), to = max(x), by = "1 day")) +
+        #scale_colour_manual(values = palette2) +
+  labs(title="Mean Delay across all train lines",
+        x="Day", y="Trip Delay (minutes)") +
+  plotTheme
+```
+```{r}
+dat_njstation %>%
+  filter(to == "New York Penn Station") %>% 
+  group_by(dotw) %>%
+  dplyr::summarise(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>%
+  ggplot(aes(dotw, Trip_Delay)) + geom_histogram(size=1, stat="identity", fill="blue") +
+  plotTheme + labs(title="Mean delay per day")
+```
 ### Training model : First model
 Trained using actual delay_minutes as the dependent variable.
 
