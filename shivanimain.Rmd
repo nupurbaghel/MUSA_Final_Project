@@ -434,3 +434,64 @@ ggplot(.)+
 
 
 There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
+
+
+```{r}
+df = read.csv('dat_njstation_new.csv')
+lag = read.csv('lag_variables.csv')
+plot(df$delay_minutes, lag$lag_1day, main="Lag 1 Day",
+   xlab="Value ", ylab="Delay", pch=10)
+abline(lm(df$delay_minutes~lag$lag_1day), col="red")
+plot(df$delay_minutes, lag$lag_2day, main="Lag 2 Day",
+   xlab="Value ", ylab="Delay", pch=10)
+abline(lm(df$delay_minutes~lag$lag_2day), col="red")
+plot(df$delay_minutes, lag$lag_1week, main="Lag 1 Week",
+   xlab="Value ", ylab="Delay", pch=10)
+abline(lm(df$delay_minutes~lag$lag_1week), col="red")
+plot(df$delay_minutes, lag$lag_2week, main="Lag 2 Week",
+   xlab="Value ", ylab="Delay", pch=10)
+abline(lm(df$delay_minutes~lag$lag_2week), col="red")
+```
+
+```{r}
+one_day <- 
+  df %>%
+  filter(dotw == 'Tue')
+
+one_day.panel <-
+  expand.grid(
+    date = unique(one_day$date),
+    station = unique(one_day$from))
+
+coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
+dat_njstation$LONGITUDE = coords$X
+dat_njstation$LATITUDE = coords$Y
+
+ride.animation.data <-
+  mutate(one_day, Delay_Counter = 1) %>%
+  right_join(one_day.panel) %>% 
+  group_by(date, from, LATITUDE, LONGITUDE) %>%
+  summarize(Delay_Count = sum(Delay_Counter, na.rm=T)) %>% 
+  ungroup() %>% 
+  na.omit() %>%
+  st_as_sf(., coords = c("LONGITUDE", "LATITUDE"), crs = 3701) %>%
+  st_set_crs(st_crs(subset_census)) %>%
+  mutate(Delays = case_when(Delay_Count == 0 ~ "0 trips",
+                           Delay_Count > 0 & Delay_Count <= 10 ~ "1-10 trips",
+                           Delay_Count > 10 & Delay_Count <= 20 ~ "11-20 trips",
+                           Delay_Count > 20 & Delay_Count <= 30 ~ "21-30 trips",
+                           Delay_Count > 30 ~ "31+ trips")) %>%
+  mutate(Delays = factor(Delays))
+
+rideshare_animation <-
+  ggplot() +
+  geom_sf(data = subset_census) +
+  geom_sf(data = ride.animation.data, aes(color = Delays, size = 1)) +
+  scale_fill_manual(values = palette3) +
+  labs(title = "Rideshare pickups for one day in December 2018",
+       subtitle = "15 minute intervals: {current_frame}") +
+  transition_manual(date) +
+  mapTheme
+
+animate(rideshare_animation, duration=20, renderer = gifski_renderer())
+```
