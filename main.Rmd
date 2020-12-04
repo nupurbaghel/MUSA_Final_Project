@@ -636,6 +636,24 @@ lag_features <- read.csv(file = "lag_variables.csv",row.names=1)
 #dat_njstation <- cbind(dat_njstation, lag_features)
 ```
 
+```{r}
+plotData.lag <- as.data.frame(dat_njstation) %>%
+  filter(week == 17) %>%
+  dplyr::select(lag_1day, lag_7day, lag14day, delay_minutes) %>%
+  gather(Variable, Value, -delay_minutes) %>%
+  mutate(Variable = fct_relevel(Variable, "lag_1day","lag_7day","lag_14day",
+                                          "lag4Hours","lag12Hours","lag1day"))
+
+#Correlation scatter plots
+plotData.lag %>% 
+  ggplot(aes(Value, Trip_Count)) +
+  geom_point(size = .5) + geom_smooth(method = "lm", se=F, colour = "#FA7800") +
+  facet_wrap(~Variable, ncol = 3, scales = "free") +
+  labs(title = "Bike Share Trip Count as a function of time lags",
+       subtitle = "One week in December, 2018") +
+  plotTheme
+```
+
 ### Congestion variable
 For a particular station, how many trains cross in that particular hour?
 ```{r}
@@ -645,6 +663,8 @@ dat_njstation <- dat_njstation %>%
   ungroup() %>% 
   right_join(dat_njstation)
 ```
+
+
 
 ### Creating custom dependant variable - diff_delay
 
@@ -696,10 +716,10 @@ rbind(
 
 ```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
-  group_by(line, interval60) %>% 
+  group_by(line, date) %>% 
   dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
   ungroup() %>% 
-  ggplot(aes(interval60, Trip_Delay, color = line)) + geom_line() +
+  ggplot(aes(date, Trip_Delay, color = line)) + geom_line() +
         #scale_colour_manual(values = palette2) +
   labs(title="Mean Delay across all train lines",
         x="Day", y="Trip Delay (minutes)") +
