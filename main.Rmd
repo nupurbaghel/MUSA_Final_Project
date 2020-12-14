@@ -123,6 +123,7 @@ dat <- dat %>%
          actual_time = as_datetime(actual_time),
          date = as_date(scheduled_time),
          interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour"),
+         hour = hour(scheduled_time),
          dotw =  wday(scheduled_time, label=TRUE),
          week = week(scheduled_time)) %>% distinct()
 
@@ -155,13 +156,15 @@ njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_
 njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
   st_transform('EPSG:2236') %>%
   filter(AMTRAK != "Y") %>%
-  select(STATION, COUNTY, geometry, RAIL_LINE) 
+  select(STATION, COUNTY, geometry, RAIL_LINE, LATITUDE, LONGITUDE) 
 
 njstations.first <- njstations[match(unique(njstations$STATION), njstations$STATION),]
 
 amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
 ```
+
+
 
 ```{r}
 hist(dat$delay_minutes)
@@ -255,6 +258,142 @@ nas <- dat_njstation %>%
   filter (is.na(COUNTY))
 ```
 
+# Getting coordinates of missing stations 
+```{r}
+#miss <- dat_njstation[(is.na(dat_njstation$RAIL_LINE)), ] %>% select(to) 
+dat_njstation <- dat_njstation %>%
+  mutate(LATITUDE_map = case_when(
+                  to == "Middletown NY" ~ 41.45734,
+                  to == "Ramsey Route 17" ~ 41.07505,
+                  to == "Ramsey Main St" ~ 41.05691,
+                  to == "Glen Rock Main Line" ~ 40.96225,
+                  to == "Secaucus Lower Lvl" ~ 40.76119,
+                  to == "Bay Street" ~ 40.80818,
+                  to == "Watsessing Avenue" ~ 40.78271,
+                  to == "Anderson Street" ~ 40.89446,
+                  to == "Essex Street" ~ 40.71284,
+                  to == "Wood Ridge" ~ 40.98067,
+                  to == "Princeton Junction" ~ 40.31632,
+                  to == "New Brunswick" ~ 40.49732,
+                  to == "Metropark" ~ 40.56858,
+                  to == "Newark Airport" ~ 40.70442,
+                  to == "Secaucus Upper Lvl" ~ 40.76119,
+                  to == "New York Penn Station" ~ 40.75005,
+                  to == "Philadelphia" ~ 39.95655,
+                  to == "Pennsauken" ~ 39.9783,
+                  to == "Atlantic City Rail Terminal" ~ 39.36330,
+                  to == "Point Pleasant Beach" ~ 40.09272,
+                  to == "Middletown NJ" ~ 40.38978,
+                  to == "Montclair State U" ~ 40.86978,
+                  to == "Mount Arlington" ~ 40.89659,
+                  to == "Mountain View" ~ 40.91398,
+                  to == "Wayne-Route 23" ~ 40.90026,
+                  to == "Teterboro" ~ 40.86489),
+         LONGITUDE_map = case_when(
+                  to == "Middletown NY" ~ -74.37036,
+                  to == "Ramsey Route 17" ~ -74.14549,
+                  to == "Ramsey Main St" ~ -74.14205,
+                  to == "Glen Rock Main Line" ~ -74.13345,
+                  to == "Secaucus Lower Lvl" ~ -74.07582,
+                  to == "Bay Street" ~ -74.20868,
+                  to == "Watsessing Avenue" ~ -74.19844,
+                  to == "Anderson Street" ~ -74.04378,
+                  to == "Essex Street" ~ -74.03608,
+                  to == "Wood Ridge" ~ -74.12057,
+                  to == "Princeton Junction" ~ -74.62375,
+                  to == "New Brunswick" ~ -74.44565,
+                  to == "Metropark" ~ -74.32933,
+                  to == "Newark Airport" ~ -74.19071,
+                  to == "Secaucus Upper Lvl" ~ -74.07582,
+                  to == "New York Penn Station" ~ -73.99236,
+                  to == "Philadelphia" ~ -75.18142,
+                  to == "Pennsauken" ~ -75.06197,
+                  to == "Atlantic City Rail Terminal" ~ -74.44148,
+                  to == "Point Pleasant Beach" ~ -74.04819,
+                  to == "Middletown NJ" ~ -74.11613,
+                  to == "Montclair State U" ~ -74.19743,
+                  to == "Mount Arlington" ~ -74.63273,
+                  to == "Mountain View" ~ -74.26781,
+                  to == "Wayne-Route 23" ~ -74.25697,
+                  to == "Teterboro" ~ -74.06265)) 
+
+
+
+dat_njstation <- dat_njstation %>%
+  mutate(LATITUDE_geo = case_when(
+                  to == "Middletown NY" ~ 2473857.10443312,
+                  to == "Ramsey Route 17" ~ 2546600.43904687,
+                  to == "Ramsey Main St" ~ 2548071.213794,
+                  to == "Glen Rock Main Line" ~ 2553173.27811609,
+                  to == "Secaucus Lower Lvl" ~ 2574931.67533377,
+                  to == "Bay Street" ~ 2536756.2007145,
+                  to == "Watsessing Avenue" ~ 2540316.10362768,
+                  to == "Anderson Street" ~ 2579939.88324208,
+                  to == "Essex Street" ~ 2587358.14925183,
+                  to == "Wood Ridge" ~ 2571714.38784559,
+                  to == "Princeton Junction" ~ 2424325.92246776,
+                  to == "New Brunswick" ~ 2479578.73529207,
+                  to == "Metropark" ~ 2509985.86462867,
+                  to == "Newark Airport" ~ 2544684.21753966,
+                  to == "Secaucus Upper Lvl" ~ 2553173.27811609,
+                  to == "New York Penn Station" ~ 2598402.32682548,
+                  to == "Philadelphia" ~ 2287748.12653078,
+                  to == "Pennsauken" ~ 2320796.78031357,
+                  to == "Atlantic City Rail Terminal" ~ 2511259.84277974,
+                  to == "Point Pleasant Beach" ~ 2601870.52191446,
+                  to == "Middletown NJ" ~ 2574389.58056374,
+                  to == "Montclair State U" ~ 2538119.2934849,
+                  to == "Mount Arlington" ~ 2416905.89259235,
+                  to == "Mountain View" ~ 2517392.72564527,
+                  to == "Wayne-Route 23" ~ 2520776.28615481, 
+                  to == "Teterboro" ~ 2575574.40229659), 
+          LONGITUDE_geo = case_when(
+                  to == "Middletown NY" ~ 6300237.08919109,
+                  to == "Ramsey Route 17" ~ 6165652.3195194,
+                  to == "Ramsey Main St" ~ 6159109.81628919,
+                  to == "Glen Rock Main Line" ~ 6124775.82298926,
+                  to == "Secaucus Lower Lvl" ~ 6052714.51453407,
+                  to == "Bay Street" ~ 6066957.35645596,
+                  to == "Watsessing Avenue" ~ 6057891.02845568,
+                  to == "Anderson Street" ~ 6102023.51420209,
+                  to == "Essex Street" ~ 6035957.42686259,
+                  to == "Wood Ridge" ~ 6082801.75680131,
+                  to == "Princeton Junction" ~ 5887634.71567872,
+                  to == "New Brunswick" ~ 5948577.7928019,
+                  to == "Metropark" ~ 5977000.95892906,
+                  to == "Newark Airport" ~6029503.90081312,
+                  to == "Secaucus Upper Lvl" ~6052714.51453407,
+                  to == "New York Penn Station" ~ 6050498.84576351,
+                  to == "Philadelphia" ~ 5737001.50509207,
+                  to == "Pennsauken" ~ 5746956.61254804,
+                  to == "Atlantic City Rail Terminal" ~ 5535112.08561287,
+                  to == "Point Pleasant Beach" ~ 5809520.88307356,
+                  to == "Middletown NJ" ~ 5916376.13106645,
+                  to == "Montclair State U" ~ 6089666.71633157,
+                  to == "Mount Arlington" ~ 6090338.96278667,
+                  to == "Mountain View" ~ 6104270.70311063,
+                  to == "Wayne-Route 23" ~ 6099501.47722319,
+                  to == "Teterboro" ~ 6090822.97149897))
+coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
+dat_njstation$LATITUDE_exist = coords$X
+dat_njstation$LONGITUDE_exist = coords$Y
+
+
+```
+
+```{r}
+dat_njstation <- dat_njstation %>%
+  mutate(LONGITUDE_geo = ifelse(is.na(LONGITUDE_geo),LONGITUDE_exist,LONGITUDE_geo),
+         LATITUDE_geo = ifelse(is.na(LATITUDE_geo),LATITUDE_exist,LATITUDE_geo),
+         LONGITUDE_map = ifelse(is.na(LONGITUDE_map),LONGITUDE,LONGITUDE_map),
+         LATITUDE_map = ifelse(is.na(LATITUDE_map),LATITUDE,LATITUDE_map)) %>%
+  select(-LATITUDE_exist,-LONGITUDE_exist,-LATITUDE,-LONGITUDE)
+```
+
+```{r}
+dat_njstation <- dat_njstation %>%
+st_as_sf(., coords = c("LONGITUDE_geo", "LATITUDE_geo"), crs = 3701)
+```
 
 ## Census Data
 Collecting census data for States - New Jersey, New York and Pennsylvania
@@ -573,51 +712,51 @@ dat_2months <- dat_2months %>%
 ```
 
 ```{r eval=F}
-get_lagvars <- function(dat_njstation_row){
-    #print(dat_njstation_row)
-    cur_date <- dat_njstation_row$date
-    cur_train_id<- dat_njstation_row$train_id
-    cur_from <- dat_njstation_row$from
-    cur_to <- dat_njstation_row$to
-    
-    dat_2months_filter <- dat_2months %>% 
-      filter(
-        date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
-        train_id == cur_train_id, from == cur_from, to == cur_to) %>%
-      select(date, delay_minutes)
-
-    
-    lag_1day <- dat_2months_filter %>% 
-      filter(date == cur_date - 1) %>%
-      select(delay_minutes)
-    
-    if (dim(lag_1day)[1] == 0) { lag_1day <- NA }
-    else { lag_1day <- lag_1day[[1]] }
-    
-    lag_2day <- dat_2months_filter %>% 
-      filter(date == cur_date - 2) %>%
-      select(delay_minutes)
-    
-    if (dim(lag_2day)[1] == 0) { lag_2day <- NA }
-    else { lag_2day <- lag_2day[[1]] }
-    
-    lag_7day <- dat_2months_filter %>% 
-      filter(date == cur_date - 7) %>%
-      select(delay_minutes)
-    
-    if (dim(lag_7day)[1] == 0) { lag_7day <- NA }
-    else { lag_7day <- lag_7day[[1]] }
-    
-    lag_14day <- dat_2months_filter %>% 
-      filter(date == cur_date - 14) %>%
-      select(delay_minutes)
-    
-   if (dim(lag_14day)[1] == 0) { lag_14day <- NA }
-    else { lag_14day <- lag_14day[[1]] }
-    
-    return(list("lag_1day" = lag_1day, "lag_2day" = lag_2day, 
-                "lag_1week" = lag_7day, "lag_2week" = lag_14day))
-}
+# get_lagvars <- function(dat_njstation_row){
+#     #print(dat_njstation_row)
+#     cur_date <- dat_njstation_row$date
+#     cur_train_id<- dat_njstation_row$train_id
+#     cur_from <- dat_njstation_row$from
+#     cur_to <- dat_njstation_row$to
+#     
+#     dat_2months_filter <- dat_2months %>% 
+#       filter(
+#         date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
+#         train_id == cur_train_id, from == cur_from, to == cur_to) %>%
+#       select(date, delay_minutes)
+# 
+#     
+#     lag_1day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 1) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_1day)[1] == 0) { lag_1day <- NA }
+#     else { lag_1day <- lag_1day[[1]] }
+#     
+#     lag_2day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 2) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_2day)[1] == 0) { lag_2day <- NA }
+#     else { lag_2day <- lag_2day[[1]] }
+#     
+#     lag_7day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 7) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_7day)[1] == 0) { lag_7day <- NA }
+#     else { lag_7day <- lag_7day[[1]] }
+#     
+#     lag_14day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 14) %>%
+#       select(delay_minutes)
+#     
+#    if (dim(lag_14day)[1] == 0) { lag_14day <- NA }
+#     else { lag_14day <- lag_14day[[1]] }
+#     
+#     return(list("lag_1day" = lag_1day, "lag_2day" = lag_2day, 
+#                 "lag_1week" = lag_7day, "lag_2week" = lag_14day))
+# }
 
 #sampled_dat_njstation <- sample_n(dat_njstation, 10)
 
@@ -655,6 +794,23 @@ plotData.lag %>%
   plotTheme
 ```
 
+### Critical Station variable
+How many trains cross a particular station?
+```{r}
+# njstation_critical_station <- dat_njstation %>%
+#   group_by(to, train_id) %>%
+#   dplyr::summarise(critical = n()) %>%
+#   ungroup()
+
+njstation_critical_station <- dat_njstation %>%
+  group_by(to) %>%
+  mutate(critical = n_distinct(train_id)) %>%
+  ungroup()
+
+ggplot() +
+  geom_histogram(data = njstation_critical_station, aes())
+```
+
 ### Congestion variable
 For a particular station, how many trains cross in that particular hour?
 ```{r}
@@ -667,6 +823,11 @@ dat_njstation <- dat_njstation %>% left_join(njstation_cong)
 ```
 
 ```{r}
+library(geosphere)
+distm (c(2492491.95052859, 5556119.56165213), c(, lat2), fun = distHaversine)
+```
+
+```{r}
 one_day <- 
   dat_njstation %>%
   filter(date == as_date('2018-04-15'))
@@ -676,6 +837,8 @@ one_day.panel <-
     interval60 = unique(one_day$interval60),
     to = unique(one_day$to))
 ```
+
+
 
 ```{r}
 ride.animation.data <-
@@ -720,22 +883,26 @@ animate(rideshare_animation, duration=20, renderer = gifski_renderer())
 ```{r}
 dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
 
-for(i in 1:nrow(dat_njstation)){
-    if((i %% 20000) == 0){
-      print(i)
-    }
-    row <- dat_njstation[i,]
-    if(row$from == row$to){
-      dat_njstation$diff_delay[i] = 0
-    }
-    else{
-      prev_row <- dat_njstation[i-1,]
-      dat_njstation$diff_delay[i] = row$actual_time - prev_row$actual_time - 
-        (row$scheduled_time - prev_row$scheduled_time)
-    }
-}
+# for(i in 1:nrow(dat_njstation)){
+#     if((i %% 20000) == 0){
+#       print(i)
+#     }
+#     row <- dat_njstation[i,]
+#     if(row$from == row$to){
+#       dat_njstation$diff_delay[i] = 0
+#     }
+#     else{
+#       prev_row <- dat_njstation[i-1,]
+#       dat_njstation$diff_delay[i] = row$actual_time - prev_row$actual_time - 
+#         (row$scheduled_time - prev_row$scheduled_time)
+#     }
+# }
 ```
-
+```{r}
+#write.csv(as.matrix(dat_njstation %>% select(diff_delay)), file = "diff_delay_variable.csv")
+diff_delay_var <- read.csv("diff_delay_variable.csv")
+dat_njstation <- cbind(dat_njstation, diff_delay_var)
+```
 
 ### Correlation plot for Continuous numeric features
 
@@ -928,3 +1095,10 @@ reg.cv <- crossValidate(
 
 
 There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
+
+
+
+
+
+
+
