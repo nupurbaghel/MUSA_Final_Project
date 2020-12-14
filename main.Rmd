@@ -624,14 +624,38 @@ ggplot()+
 ### Reported Delays per Day
 
 ### Total Delays in Minutes per Day
+```{r}
+delay.Panel_hourly <- 
+  dat_njstation %>%
+  group_by(interval60) %>%
+  dplyr::summarise(avg_delay = mean(delay_minutes))
 
+ggplot(delay.Panel_hourly, aes(interval60, avg_delay)) + geom_line() + 
+  labs(title="Average delay for 30 days span", x="Hour", y="Delay in minutes") + plotTheme
+```
 
 ## Feature Engineering
 ### Distance between Stations
 
 These stations have missing Geometries
 ```{r}
-unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
+#unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
+library(geosphere)
+
+dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+for(i in 1:nrow(dat_njstation)){
+    if((i %% 20000) == 0){
+      print(i)
+    }
+    row <- dat_njstation[i,]
+    if(row$from == row$to){
+      dat_njstation$dist[i] = 0
+    }
+    else{
+      prev_row <- dat_njstation[i-1,]
+      dat_njstation$dist[i] = distm (c(prev_row$LONGITUDE_map,prev_row$LATITUDE_map), c(row$LONGITUDE_map,row$LATITUDE_map), fun = distHaversine)
+    }
+}
 ```
 
 ```{r}
@@ -822,10 +846,6 @@ njstation_cong <- dat_njstation %>%
 dat_njstation <- dat_njstation %>% left_join(njstation_cong)
 ```
 
-```{r}
-library(geosphere)
-distm (c(2492491.95052859, 5556119.56165213), c(, lat2), fun = distHaversine)
-```
 
 ```{r}
 one_day <- 
