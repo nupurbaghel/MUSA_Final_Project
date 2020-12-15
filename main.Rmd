@@ -32,6 +32,10 @@ library(gifski)
 library(gganimate)
 library(mapview)
 library(dplyr)
+library(randomForest)
+require(caTools)
+library(Metrics)
+library(stargazer)
 
 mapTheme <- function(base_size = 12) {
   theme(
@@ -436,7 +440,6 @@ ggplot() +
   mapTheme
 ```
 
-
 ## Weather Data
 We are collecting weather data for Trenton for the same duration as our original data set (April 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study, it would make sense to include other location's weather data as well.
 
@@ -482,6 +485,17 @@ dat_njstation <-
 ```
 
 ## Exploratory Data Analysis
+
+```{r message=FALSE, warning=FALSE, results="asis"}
+numericVars <- 
+  select_if(dat_njstation %>% 
+            select(date, train_id, delay_minutes, Temperature, Precipitation,
+                   Wind_Speed, stop_sequence), is.numeric) %>% na.omit()
+stargazer(numericVars, type = "text", title="Descriptive statistics for internal features", digits=1)
+```
+```{r}
+quantile(dat_njstation$delay_minutes, c(.32, .57, .98))
+```
 
 ### Weather Panel (Hourly)
 
@@ -671,24 +685,10 @@ These stations have missing Geometries
 
 ```{r}
 #write.csv(as.matrix(dat_njstation %>% select(dist)), file = "dist_variable.csv")
-distance <- read.csv(file = "dist_variable.csv",row.names=1)
-dat_njstation <- cbind(dat_njstation, distance)
-dat_njstation$dist <- dat_njstation$X/1609.344
-```
-
-```{r}
-# library(ggmap)
-# 
-# origAddress <- dat_njstation %>% filter(is.na(LATITUDE))
-# 
-# for(i in 1:nrow(origAddress))
-# {
-#   # Print("Working...")
-#   result <- geocode(origAddress$from[i], output = "latlona", source = "google")
-#   origAddress$lon[i] <- as.numeric(result[1])
-#   origAddress$lat[i] <- as.numeric(result[2])
-#   origAddress$geoAddress[i] <- as.character(result[3])
-# }
+distance <- read.csv(file = "dist_variable.csv", row.names=1)
+dat_njstation <- cbind(dat_njstation, distance$X) %>%
+  rename(dist = distance.X) %>%
+  mutate(dist = dist/1609.344)
 ```
 
 ### Number of stations for a particular route
@@ -895,7 +895,7 @@ ride.animation.data <-
   dplyr::summarize(Congestion = sum(Congestion_Counter, na.rm=T)) %>% 
   ungroup() %>% 
   na.omit() %>%
-  st_as_sf(., coords = c("LATITUDE","LONGITUDE"), crs = 3701) %>%
+  st_as_sf(., coords = c("LONGITUDE","LATITUDE"), crs = 3701) %>%
   st_set_crs(st_crs(subset_census)) %>%
   mutate(Trains = case_when(Congestion == 0 ~ "0 trains",
                            Congestion > 0 & Congestion <= 2 ~ "1-2 trains",
@@ -963,13 +963,15 @@ dat_njstation$lag_2week[is.na(dat_njstation$lag_2week)] <- 0
 
 ## Building Model
 
-### Split Data into Train and Test
+### Remove Outliers and Split Data into Train and Test
 ```{r}
+#98th percentile is 19.38
+dat_njstation <- dat_njstation %>% filter(delay_minutes < 20)
 dat.Train <- filter(dat_njstation, week < 17)
 dat.Test <- filter(dat_njstation, week >= 17)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 rbind(
   mutate(dat.Train, Legend = "Training"), 
   mutate(dat.Test, Legend = "Testing")) %>%
@@ -1019,93 +1021,89 @@ dat_njstation %>%
   ggplot(aes(dotw, Trip_Delay)) + geom_histogram(size=1, stat="identity", fill="blue") +
   plotTheme + labs(title="Mean delay per day")
 ```
+
 ### Training model : First model
 Trained using actual delay_minutes as the dependent variable.
 
 ```{r}
-# reg1 <- 
-#   lm(delay_minutes ~ train_id + dotw + Wind_Speed + Temperature + Precipitation, data = dat.Train)
-# 
-# summary(reg1)$r.squared
-# summary(reg1)$adj.r.squared
+ind.vars.org <-  c("dotw", "from", "to","hour", "Wind_Speed", "Temperature", "Precipitation")
+
+ind.vars.imp <- c("dotw", "from", "to", "total_stops", "hour", "Wind_Speed", "Temperature",
+               "Precipitation", "dist", "lag_1day", "lag_1week", "lag_2week",
+               "congestion", "critical", "a")
+
+dep.var <- "delay_minutes"
 ```
 
-```{r}
-# reg2 <- 
-#   lm(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data = dat.Train)
-# 
-# summary(reg2)$r.squared
-# summary(reg2)$adj.r.squared
+#### Linear Regression model
+```{r message=FALSE, warning=FALSE}
+reg_base <- lm(delay_minutes ~ ., na.action = na.exclude, family = "poisson",
+           data = dat.Train %>% select(ind.vars.org, dep.var))
 
-#[1] 0.1740455
-#[1] 0.1675164
+print("R-Squared values for Regression Model")
+summary(reg_base)$r.squared
+summary(reg_base)$adj.r.squared
+
+reg <- lm(delay_minutes ~ ., na.action = na.exclude, family = "poisson",
+           data = dat.Train %>% select(ind.vars.imp, dep.var))
+
+print("R-Squared values for Regression with Improved Features")
+summary(reg)$r.squared
+summary(reg)$adj.r.squared
 ```
 
-```{r}
-library(randomForest)
-require(caTools)
-rf <- randomForest(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train, method = "parRF", ntree = 50)
-```
-
-```{r}
+#### Random Forest model
+```{r message=FALSE, warning=FALSE}
+rf <- randomForest(delay_minutes ~ ., na.action = na.exclude,
+                   data = dat.Train  %>% select(ind.vars.imp, dep.var),
+                   method = "parRF", ntree = 50)
 summary(rf$mse)
 rf
 ```
 
-```{r}
-# rf100 <- randomForest(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train, method = "parRF", ntree = 100)
-```
-
-```{r}
-# summary(rf100$mse)
-# rf100
-```
-
-```{r}
-# library(ISLR)
-# require(tree)
-# dtree <- tree(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train)
-```
-
-```{r}
-#summary(dtree)
-```
-
-
 ### Predicting for test data
 We use nested data for the testing part. 
 
-```{r nest_data, cache = TRUE, warning = FALSE, message = FALSE}
-dat.Test.weekNest <- 
-  dat.Test %>%
+```{r nest_data, warning = FALSE, message = FALSE}
+dat.Test.weekNest <- dat.Test %>% 
+  select(ind.vars1, week, interval60, delay_minutes, LATITUDE, LONGITUDE) %>%
   nest(-week) 
 ```
+
 na.action=na.exclude
 
 When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
-
 ```{r predict_function, cache = TRUE}
-pred = predict(rf, newdata=dat.Test %>% select(from, to, total_stops, hour, dotw, train_id, Wind_Speed, Temperature, Precipitation, dist, lag_1day, lag_1week, lag_2week, congestion, critical, a), na.action = na.exclude)
-library(Metrics)
-mse(pred, dat.Test[,11])
+model_pred <- function(dat, fit){
+   pred <- predict(fit, newdata = dat, na.action = na.exclude)}
 ```
 
-
-```{r do_predicitons, cache = TRUE}
+```{r do_predicitons, message=FALSE, warning=FALSE, cache=FALSE}
 week_predictions <- 
   dat.Test.weekNest %>% 
-    mutate(#ATime_FE = map(.x = data, fit = reg1, .f = model_pred),
-           BSpace_FE = map(.x = data, fit = reg2, .f = model_pred),
-           #CTime_Space_FE = map(.x = data, fit = reg3, .f = model_pred),
-           #DTime_Space_FE_timeLags = map(.x = data, fit = reg4, .f = model_pred),
-           #ETime_Space_FE_timeLags_holidayLags = map(.x = data, fit = reg5, .f = model_pred)
-           ) %>% 
+    mutate(
+          A_Base = map(.x = data, fit = reg_base, .f = model_pred),
+          B_Regression = map(.x = data, fit = reg, .f = model_pred),
+          C_RandomForest = map(.x = data, fit = rf, .f = model_pred),
+    ) %>% 
     gather(Regression, Prediction, -data, -week) %>%
     mutate(Observed = map(data, pull, delay_minutes),
            Absolute_Error = map2(Observed, Prediction,  ~ abs(.x - .y)),
+           SquareAbsErr = map2(Absolute_Error, Absolute_Error,  ~ abs(.x*.y)),
+           AbsPercErr = map2(Absolute_Error, Prediction,  ~ abs(.x/.y)),
+           MSE = map_dbl(SquareAbsErr, mean, na.rm = TRUE),
+           sd_SE = map_dbl(SquareAbsErr, sd, na.rm = TRUE),
            MAE = map_dbl(Absolute_Error, mean, na.rm = TRUE),
-           sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE))
-week_predictions
+           sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE),
+           MAPE = map_dbl(AbsPercErr, mean, na.rm = TRUE),
+           )
+```
+
+```{r}
+kable(week_predictions %>% 
+         select(-Absolute_Error, -SquareAbsErr, -Prediction, -Observed, -data, -AbsPercErr),
+      caption = "Test results for all models"
+) %>% kable_styling()
 ```
 
 ### Cross validation
@@ -1142,35 +1140,146 @@ crossValidate <- function(dataset, id, dependentVariable, indVariables) {
 ```
 
 ```{r }
-
+# Helper function
 find_na_rows <- function(data){
   M <- sapply(data, function(x) sum(is.na(x)));
   print(M[M>0][[1]])
 }
-
-#nas <- dat_njstation %>% filter (is.na(Temperature))
-
-# find_na_rows(dat_njstation %>% select("dotw"))
-# find_na_rows(dat_njstation %>% select("Temperature"))
-# find_na_rows(dat_njstation %>% select("Precipitation"))
-# find_na_rows(dat_njstation %>% select("delay_minutes"))
-#find_na_rows(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes"))
-#print(nrow(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes")))
 ```
 
-
+train_id feature removed to account for missing levels.
 ```{r message=FALSE, warning=FALSE, results=F}
 dat_njstation <- dat_njstation %>% 
   mutate(dotw_id = wday(scheduled_time))
 
-ind.vars <- c("dotw_id", "Temperature","Precipitation", "train_id", "from", "to")
+ind.vars <- c("dotw_id", "from", "to", "total_stops", "hour", "Wind_Speed",
+                "Temperature", "Precipitation", "dist", "lag_1day", "lag_1week", "lag_2week",
+                "congestion", "critical")
 
 reg.cv <- crossValidate(
   dataset = dat_njstation,
-  id = "dotw_id",
+  id = "hour",
   dependentVariable = "delay_minutes",
   indVariables = ind.vars)
 ```
+
+```{r}
+error_by_reg_and_fold <- 
+  reg.cv %>%
+    group_by(hour) %>% 
+    summarize(Mean_Error = mean(Prediction - delay_minutes, na.rm = T),
+              MAE = mean(abs(Mean_Error), na.rm = T),
+              SD_MAE = mean(abs(Mean_Error), na.rm = T)) %>%
+  ungroup()
+
+error_by_reg_and_fold %>%
+  ggplot(aes(MAE)) + 
+    geom_histogram(bins = 30, colour="black", fill = "#FDE725FF") +
+    #geom_vline(xintercept = 0) + scale_x_continuous(breaks = seq(0, 8, by = 1)) + 
+    labs(title="Distribution of MAE", subtitle = "LOGO-CV by hour of the day",
+         x="Mean Absolute Error", y="Count") 
+```
+
+### Error Analysis
+
+#### MSE Errors by model and week - Accuracy
+```{r}
+week_predictions %>%
+  dplyr::select(week, Regression, MSE) %>%
+  gather(Variable, MSE, -Regression, -week) %>%
+  ggplot(aes(week, MSE)) + 
+    geom_bar(aes(fill = Regression), position = "dodge", stat="identity") +
+    scale_fill_manual(values = palette2) +
+    labs(title = "Mean Squared Errors by \nmodel specification and week") +
+  plotTheme
+```
+
+#### Error across Time
+```{r message=FALSE, warning=FALSE}
+week_predictions_pull <-  week_predictions %>% 
+    mutate(interval60 = map(data, pull, interval60),
+           to = map(data, pull, to), 
+           start_lat = map(data, pull, LATITUDE), 
+           start_lon = map(data, pull, LONGITUDE),
+           dotw = map(data, pull, dotw))
+
+week_predictions_pull %>%
+    dplyr::select(interval60, to, Observed, Prediction, Regression) %>%
+    unnest() %>%
+    gather(Variable, Value, -Regression, -interval60, -to) %>%
+    group_by(Regression, Variable, interval60) %>%
+    summarize(Value = sum(Value)) %>%
+    ggplot(aes(interval60, Value, colour=Variable)) + 
+      geom_line(size = 1.1) + 
+      facet_wrap(~Regression, ncol=1) +
+      labs(title = "Predicted/Observed Train delay time series",
+           subtitle = "NJ Transit; A test set of 2 weeks",  x = "Hour", y= "Delay") +
+      plotTheme
+```
+
+#### Errors across Space
+```{r message=FALSE, warning=FALSE}
+week_predictions_pull %>%
+    select(interval60, to, start_lat, start_lon, Observed, Prediction, Regression) %>%
+    unnest() %>%
+  filter(Regression == "C_RandomForest") %>%
+  group_by(to, start_lon, start_lat) %>%
+  summarize(MAE = mean(abs(Observed-Prediction), na.rm = TRUE))%>%
+ggplot(.)+
+  geom_sf(data = subset_census , color = "grey", fill = "transparent")+
+  geom_point(aes(x = start_lon, y = start_lat, color = MAE), 
+             fill = "transparent", alpha = 0.8) +
+  scale_colour_viridis(direction = -1,
+  discrete = FALSE, option = "D") +
+  labs(title="Mean Absolute Error, Test Set, RandomForest")+
+  mapTheme()
+```
+
+#### Correlation in Errors across Time
+```{r message=FALSE, warning=FALSE}
+week_predictions_pull %>%
+    select(interval60, to, start_lon, start_lat, Observed, Prediction, Regression, dotw) %>%
+    unnest() %>%
+  filter(Regression == "C_RandomForest")%>%
+  mutate(weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
+         time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush"))%>%
+  ggplot()+
+  geom_point(aes(x= Observed, y = Prediction))+
+    geom_smooth(aes(x= Observed, y= Prediction), method = "lm", se = FALSE, color = "red")+
+    geom_abline(slope = 1, intercept = 0)+
+  facet_grid(time_of_day~weekend)+
+  labs(title="Observed vs Predicted",
+       x="Observed Delays", 
+       y="Predicted Delays") +
+  plotTheme
+```
+
+#### Error across Space and Time
+```{r message=FALSE, warning=FALSE}
+week_predictions_pull %>%
+    select(interval60, to, start_lon, start_lat, Observed, Prediction, Regression, dotw) %>%
+    unnest() %>%
+  filter(Regression == "C_RandomForest")%>%
+  mutate(weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
+         time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush")) %>%
+  group_by(to, weekend, time_of_day, start_lon, start_lat) %>%
+  summarize(MAE = mean(abs(Observed-Prediction), na.rm = TRUE)) %>%
+  ggplot(.)+
+  geom_sf(data = subset_census, color = "grey", fill = "transparent")+
+  geom_point(aes(x = start_lon, y = start_lat, color = MAE), 
+             fill = "transparent", size = 1.5, alpha = 0.8)+
+  scale_colour_viridis(direction = -1, discrete = FALSE, option = "D")+
+  facet_grid(weekend~time_of_day)+
+  labs(title="Mean Absolute Errors, Test Set")+
+  mapTheme()
+```
+
 
 <!-- ### Training model : Second model -->
 
@@ -1178,7 +1287,40 @@ reg.cv <- crossValidate(
 <!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
 <!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
 
-### Evaluation
+### Generalizability - Socio-Economic Factors
+```{r message=FALSE, warning=FALSE}
+week_predictions_with_census <- 
+  week_predictions_pull %>% 
+  unnest() %>%
+  filter(Regression == "C_RandomForest") %>%
+  mutate(LATITUDE = start_lat, LONGITUDE = start_lon) %>%
+  st_as_sf(., coords = c("LONGITUDE","LATITUDE"), crs = 3701) %>%
+  st_set_crs(st_crs(subset_census)) %>% 
+  st_join(subset_census, left = TRUE) 
+
+week_predictions_with_census %>%
+  select(interval60, to, start_lon, start_lat, Observed, Prediction, Regression,dotw,
+         Percent_Taking_Public_Trans, Med_Inc, Percent_White) %>%
+  st_drop_geometry(.) %>% 
+  mutate(weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
+         time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush")) %>%
+  filter(time_of_day == "AM Rush") %>%
+  group_by(to, Percent_Taking_Public_Trans, Med_Inc, Percent_White) %>%
+  summarize(MAE = mean(abs(Observed-Prediction), na.rm = TRUE)) %>%
+  gather(-to, -MAE, key = "variable", value = "value") %>%
+  ggplot(.)+
+  geom_point(aes(x = value, y = MAE), alpha = 0.4)+
+  geom_smooth(aes(x = value, y = MAE), method = "lm", se= FALSE)+
+  facet_wrap(~variable, scales = "free")+
+  labs(title="Errors as a function of socio-economic variables",
+       y="Mean Absolute Error (Trips)")+
+  plotTheme
+```
+
+### Conclusion
 
 
 There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
