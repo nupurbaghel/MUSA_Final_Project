@@ -1,0 +1,1163 @@
+---
+title: "Forecast Metro train delays in and around NYC"
+author: "Nupur Baghel, Shivani Rai"
+date: "December 15th, 2020"
+output: 
+  html_document:
+  toc: true
+toc_float: true
+code_folding: "hide"
+code_download: true
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup_13, message=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(lubridate)
+library(tigris)
+library(tidycensus)
+library(viridis)
+library(riem)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(RSocrata)
+library(caret)
+library(osmdata)
+library(gifski)
+library(gganimate)
+library(mapview)
+library(dplyr)
+
+mapTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 14,colour = "black"),
+    plot.subtitle=element_text(face="italic"),
+    plot.caption=element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2)
+  )
+}
+
+plotTheme <- theme(
+  plot.title =element_text(size=12),
+  plot.subtitle = element_text(size=8),
+  plot.caption = element_text(size = 6),
+  axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+  axis.text.y = element_text(size = 10),
+  axis.title.y = element_text(size = 10),
+  # Set the entire chart region to blank
+  panel.background=element_blank(),
+  plot.background=element_blank(),
+  #panel.border=element_rect(colour="#F0F0F0"),
+  # Format the grid
+  panel.grid.major=element_line(colour="#D0D0D0",size=.2),
+  axis.ticks=element_blank())
+
+mapTheme <- theme(plot.title =element_text(size=12),
+                  plot.subtitle = element_text(size=8),
+                  plot.caption = element_text(size = 6),
+                  axis.line=element_blank(),
+                  axis.text.x=element_blank(),
+                  axis.text.y=element_blank(),
+                  axis.ticks=element_blank(),
+                  axis.title.x=element_blank(),
+                  axis.title.y=element_blank(),
+                  panel.background=element_blank(),
+                  panel.border=element_blank(),
+                  panel.grid.major=element_line(colour = 'transparent'),
+                  panel.grid.minor=element_blank(),
+                  legend.direction = "vertical", 
+                  legend.position = "right",
+                  plot.margin = margin(1, 1, 1, 1, 'cm'),
+                  legend.key.height = unit(1, "cm"), legend.key.width = unit(0.2, "cm"))
+
+palette5 <- c("#eff3ff","#bdd7e7","#6baed6","#3182bd","#08519c")
+palette4 <- c("#D2FBD4","#92BCAB","#527D82","#123F5A")
+palette3 <- c("#D2FBD4","#92BCAB","#527D82")
+palette2 <- c("#6baed6","#08519c")
+
+palette55 <- c("#25CB10", "#5AB60C", "#8FA108",   "#C48C04", "#FA7800")
+qBr <- function(df, variable, rnd) {
+  if (missing(rnd)) {
+    as.character(quantile(round(df[[variable]],0),
+                          c(.01,.2,.4,.6,.8), na.rm=T))
+  } else if (rnd == FALSE | rnd == F) {
+    as.character(formatC(quantile(df[[variable]]), digits = 3),
+                 c(.01,.2,.4,.6,.8), na.rm=T)
+  }
+}
+q5 <- function(variable) {as.factor(ntile(variable, 5))}
+```
+
+```{r install_census_API_key, warning = FALSE, include=FALSE, eval = TRUE}
+# Install Census API Key
+census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
+```
+
+# Import Data
+
+## Kaggle Train Delay dataset
+The Kaggle Train Delay dataset contains delay data from Amtrak and NJ Transit trains. 
+```{r}
+# dat_2018_03 = read.csv('archive/2018_03.csv')
+# dat_2018_04 = read.csv('archive/2018_04.csv')
+# 
+# dat <- rbind(dat_2018_03, dat_2018_04)
+
+dat <- read.csv('archive/2018_04.csv')
+dat <- dat %>%
+  mutate(line = tolower(line),
+         scheduled_time =  as_datetime(scheduled_time),
+         actual_time = as_datetime(actual_time),
+         date = as_date(scheduled_time),
+         interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour"),
+         hour = hour(scheduled_time),
+         dotw =  wday(scheduled_time, label=TRUE),
+         week = week(scheduled_time)) %>% distinct()
+
+unique(dat %>% select(week, date, dotw))
+```
+
+```{r}
+M <- sapply(dat %>% filter(type == "NJ Transit"), function(x) sum(is.na(x)));
+print(M[M>0][[1]])
+print(nrow(dat %>% filter(type == "NJ Transit")))
+
+## Amtrak lines do not have scheduled time
+M <- sapply(dat %>% filter(type != "NJ Transit"), function(x) sum(is.na(x)));
+print(M[M>0][[1]])
+print(nrow(dat %>% filter(type != "NJ Transit")))
+```
+
+
+## New Jersey Rail Stations dataset
+The NJ stations dataset consists of coordinates for the stations that the kaggle train delay dataset consists of. We are not considering Amtrak stations as the delay data is not available for them in the dataset.   
+```{r}
+#jlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
+  #st_transform('EPSG:2236')
+
+njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
+  st_transform('EPSG:2236') %>%
+  filter(AMTRAK != "Y") %>%
+  select(STATION, COUNTY, geometry, RAIL_LINE, LATITUDE, LONGITUDE) 
+
+njstations.first <- njstations[match(unique(njstations$STATION), njstations$STATION),]
+
+amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
+  st_transform('EPSG:2236')
+```
+
+The histogram below shows the frequency distribution of delay (in minutes) for the month of April 2018. We can observe that most trains are in the lower delay range. Few trains have more dalays. 
+
+```{r}
+hist(dat$delay_minutes)
+```
+
+```{r include = FALSE}
+# dat - nj (geometry)
+# atl. city line - ATLANTIC CITY RAIL LINE
+# bergen co. line - BERGEN COUNTY LINE, HUDSON BERGEN LIGHT RAIL
+# main line - MAIN LINE
+# montclair-boonton - MONTCLAIR BOONTON LINE
+# morristown line - MORRIS & ESSEX
+# no jersey coast - NORTH JERSEY COAST LINE
+# northeast corrdr- NORTHEAST CORRIDOR LINE
+# pascack valley - PASCACK VALLEY LINE
+# raritan valley - RARITAN VALLEY LINE
+
+# dat - Amtrak
+
+# [1] "regional"                  "amtrak"                   
+# [3] "crescent"                  "acela express"            
+# [5] "keystone"                  "pennsylvanian"            
+# [7] "carolinian"                "silver star  -r"          
+# [9] "silver meteor-r"           "vermonter    -r"          
+# [11] "amtrak regional"           "palmetto"                 
+# [13] "cardinal"                  "bergen co. line "         
+# [15] "silver service / palmetto"
+
+# Missing - 6 (gladstone branch), 14 (princeton shuttle)
+
+#amtrak_type_line <- dat %>% filter (type == 'Amtrak')
+#dat_amtrak <- subset(dat, type == 'Amtrak')
+#dat_amtrak_from <- dat_amtrak %>%
+  #left_join(amtrak, by = c('from' = 'CITY2'))
+#dat_amtrak_to <- dat_amtrak %>%
+  #left_join(amtrak, by = c('to' = 'CITY2'))
+```
+
+Some of the stations names are slightly different, though they point to the same station. Here, we are standardizing those. 
+
+```{r}
+
+dat <- dat %>%
+  mutate(new_line_name_geo = case_when(
+                  line == 'atl. city line' ~ 'ATLANTIC CITY RAIL LINE',
+                  line == 'bergen co. line' ~ 'BERGEN COUNTY LINE',
+                  line == 'main line' ~ 'MAIN LINE',
+                  line == 'montclair-boonton' ~ 'MONTCLAIR BOONTON LINE',
+                  line == 'morristown line' ~ 'MORRIS & ESSEX',
+                  line == 'no jersey coast' ~ 'NORTH JERSEY COAST LINE',
+                  line == 'northeast corrdr' ~ 'NORTHEAST CORRIDOR LINE',
+                  line == 'pascack valley' ~ 'PASCACK VALLEY LINE',
+                  line == 'raritan valley' ~ 'RARITAN VALLEY LINE',
+                  ))
+
+dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit() 
+```
+
+```{r include = FALSE}
+# dat_nj_line <- dat_nj %>%
+#   left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
+
+# njstations <- njstations %>%
+#   mutate(new_line = case_when(
+#     RAIL_LINE == 'North Jersey Coast Line' ~ 'NORTH JERSEY COAST LINE',
+#     RAIL_LINE == 'NEC / NJCL' ~ 'NORTHEAST CORRIDOR LINE',
+#     RAIL_LINE == 'Northeast Corridor' ~ 'NORTHEAST CORRIDOR LINE',
+#     RAIL_LINE == 'Raritan Valley Line' ~ 'RARITAN VALLEY LINE',
+#     RAIL_LINE == 'Gladstone Branch/M&E' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Morristown Line/M&E' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Morris & Essex Line' ~ 'MORRIS & ESSEX',
+#     RAIL_LINE == 'Montclair-Boonton Line/M&E' ~ 'MONTCLAIR BOONTON LINE',
+#     RAIL_LINE == 'Atlantic City Line' ~ 'ATLANTIC CITY RAIL LINE',
+#     RAIL_LINE == 'Main/Bergen Line' ~ 'MAIN LINE',
+#     RAIL_LINE == 'Pascack Valley Line' ~ 'PASCACK VALLEY LINE',
+#   ))
+# 
+# dat_njstation <- dat_nj %>%
+#   left_join(njstations, by = c('from' = 'STATION', 'new_line_name_geo' = 'new_line'))
+```
+
+```{r}
+dat_njstation <- dat_nj %>%
+  left_join(njstations.first, by = c('to' = 'STATION'))
+
+# dat_njstation_to <- dat_nj %>%
+#   left_join(njstations, by = c('to' = 'STATION'))
+
+nas <- dat_njstation %>%
+  filter (is.na(COUNTY))
+```
+
+# Getting coordinates of missing stations 
+
+There are around 26 stations with missing Latitude, Longitude and geometry. This section uses NJ Stations data's coordinates to fill up the missing values in the main dataset.    
+```{r}
+#miss <- dat_njstation[(is.na(dat_njstation$RAIL_LINE)), ] %>% select(to) 
+dat_njstation <- dat_njstation %>%
+  mutate(LATITUDE_map = case_when(
+                  to == "Middletown NY" ~ 41.45734,
+                  to == "Ramsey Route 17" ~ 41.07505,
+                  to == "Ramsey Main St" ~ 41.05691,
+                  to == "Glen Rock Main Line" ~ 40.96225,
+                  to == "Secaucus Lower Lvl" ~ 40.76119,
+                  to == "Bay Street" ~ 40.80818,
+                  to == "Watsessing Avenue" ~ 40.78271,
+                  to == "Anderson Street" ~ 40.89446,
+                  to == "Essex Street" ~ 40.71284,
+                  to == "Wood Ridge" ~ 40.98067,
+                  to == "Princeton Junction" ~ 40.31632,
+                  to == "New Brunswick" ~ 40.49732,
+                  to == "Metropark" ~ 40.56858,
+                  to == "Newark Airport" ~ 40.70442,
+                  to == "Secaucus Upper Lvl" ~ 40.76119,
+                  to == "New York Penn Station" ~ 40.75005,
+                  to == "Philadelphia" ~ 39.95655,
+                  to == "Pennsauken" ~ 39.9783,
+                  to == "Atlantic City Rail Terminal" ~ 39.36330,
+                  to == "Point Pleasant Beach" ~ 40.09272,
+                  to == "Middletown NJ" ~ 40.38978,
+                  to == "Montclair State U" ~ 40.86978,
+                  to == "Mount Arlington" ~ 40.89659,
+                  to == "Mountain View" ~ 40.91398,
+                  to == "Wayne-Route 23" ~ 40.90026,
+                  to == "Teterboro" ~ 40.86489),
+         LONGITUDE_map = case_when(
+                  to == "Middletown NY" ~ -74.37036,
+                  to == "Ramsey Route 17" ~ -74.14549,
+                  to == "Ramsey Main St" ~ -74.14205,
+                  to == "Glen Rock Main Line" ~ -74.13345,
+                  to == "Secaucus Lower Lvl" ~ -74.07582,
+                  to == "Bay Street" ~ -74.20868,
+                  to == "Watsessing Avenue" ~ -74.19844,
+                  to == "Anderson Street" ~ -74.04378,
+                  to == "Essex Street" ~ -74.03608,
+                  to == "Wood Ridge" ~ -74.12057,
+                  to == "Princeton Junction" ~ -74.62375,
+                  to == "New Brunswick" ~ -74.44565,
+                  to == "Metropark" ~ -74.32933,
+                  to == "Newark Airport" ~ -74.19071,
+                  to == "Secaucus Upper Lvl" ~ -74.07582,
+                  to == "New York Penn Station" ~ -73.99236,
+                  to == "Philadelphia" ~ -75.18142,
+                  to == "Pennsauken" ~ -75.06197,
+                  to == "Atlantic City Rail Terminal" ~ -74.44148,
+                  to == "Point Pleasant Beach" ~ -74.04819,
+                  to == "Middletown NJ" ~ -74.11613,
+                  to == "Montclair State U" ~ -74.19743,
+                  to == "Mount Arlington" ~ -74.63273,
+                  to == "Mountain View" ~ -74.26781,
+                  to == "Wayne-Route 23" ~ -74.25697,
+                  to == "Teterboro" ~ -74.06265)) 
+
+
+
+dat_njstation <- dat_njstation %>%
+  mutate(LATITUDE_geo = case_when(
+                  to == "Middletown NY" ~ 2473857.10443312,
+                  to == "Ramsey Route 17" ~ 2546600.43904687,
+                  to == "Ramsey Main St" ~ 2548071.213794,
+                  to == "Glen Rock Main Line" ~ 2553173.27811609,
+                  to == "Secaucus Lower Lvl" ~ 2574931.67533377,
+                  to == "Bay Street" ~ 2536756.2007145,
+                  to == "Watsessing Avenue" ~ 2540316.10362768,
+                  to == "Anderson Street" ~ 2579939.88324208,
+                  to == "Essex Street" ~ 2587358.14925183,
+                  to == "Wood Ridge" ~ 2571714.38784559,
+                  to == "Princeton Junction" ~ 2424325.92246776,
+                  to == "New Brunswick" ~ 2479578.73529207,
+                  to == "Metropark" ~ 2509985.86462867,
+                  to == "Newark Airport" ~ 2544684.21753966,
+                  to == "Secaucus Upper Lvl" ~ 2553173.27811609,
+                  to == "New York Penn Station" ~ 2598402.32682548,
+                  to == "Philadelphia" ~ 2287748.12653078,
+                  to == "Pennsauken" ~ 2320796.78031357,
+                  to == "Atlantic City Rail Terminal" ~ 2511259.84277974,
+                  to == "Point Pleasant Beach" ~ 2601870.52191446,
+                  to == "Middletown NJ" ~ 2574389.58056374,
+                  to == "Montclair State U" ~ 2538119.2934849,
+                  to == "Mount Arlington" ~ 2416905.89259235,
+                  to == "Mountain View" ~ 2517392.72564527,
+                  to == "Wayne-Route 23" ~ 2520776.28615481, 
+                  to == "Teterboro" ~ 2575574.40229659), 
+          LONGITUDE_geo = case_when(
+                  to == "Middletown NY" ~ 6300237.08919109,
+                  to == "Ramsey Route 17" ~ 6165652.3195194,
+                  to == "Ramsey Main St" ~ 6159109.81628919,
+                  to == "Glen Rock Main Line" ~ 6124775.82298926,
+                  to == "Secaucus Lower Lvl" ~ 6052714.51453407,
+                  to == "Bay Street" ~ 6066957.35645596,
+                  to == "Watsessing Avenue" ~ 6057891.02845568,
+                  to == "Anderson Street" ~ 6102023.51420209,
+                  to == "Essex Street" ~ 6035957.42686259,
+                  to == "Wood Ridge" ~ 6082801.75680131,
+                  to == "Princeton Junction" ~ 5887634.71567872,
+                  to == "New Brunswick" ~ 5948577.7928019,
+                  to == "Metropark" ~ 5977000.95892906,
+                  to == "Newark Airport" ~6029503.90081312,
+                  to == "Secaucus Upper Lvl" ~6052714.51453407,
+                  to == "New York Penn Station" ~ 6050498.84576351,
+                  to == "Philadelphia" ~ 5737001.50509207,
+                  to == "Pennsauken" ~ 5746956.61254804,
+                  to == "Atlantic City Rail Terminal" ~ 5535112.08561287,
+                  to == "Point Pleasant Beach" ~ 5809520.88307356,
+                  to == "Middletown NJ" ~ 5916376.13106645,
+                  to == "Montclair State U" ~ 6089666.71633157,
+                  to == "Mount Arlington" ~ 6090338.96278667,
+                  to == "Mountain View" ~ 6104270.70311063,
+                  to == "Wayne-Route 23" ~ 6099501.47722319,
+                  to == "Teterboro" ~ 6090822.97149897))
+coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
+dat_njstation$LATITUDE_exist = coords$X
+dat_njstation$LONGITUDE_exist = coords$Y
+
+
+```
+
+```{r}
+dat_njstation <- dat_njstation %>%
+  mutate(LONGITUDE_geo = ifelse(is.na(LONGITUDE_geo),LONGITUDE_exist,LONGITUDE_geo),
+         LATITUDE_geo = ifelse(is.na(LATITUDE_geo),LATITUDE_exist,LATITUDE_geo),
+         LONGITUDE_map = ifelse(is.na(LONGITUDE_map),LONGITUDE,LONGITUDE_map),
+         LATITUDE_map = ifelse(is.na(LATITUDE_map),LATITUDE,LATITUDE_map)) %>%
+  select(-LATITUDE_exist,-LONGITUDE_exist,-LATITUDE,-LONGITUDE)
+```
+
+```{r}
+dat_njstation <- dat_njstation %>%
+st_as_sf(., coords = c("LONGITUDE_geo", "LATITUDE_geo"), crs = 3701)
+```
+
+## Census Data
+Collecting census data for States - New Jersey, New York and Pennsylvania. We have imported factors which we think may have some influence directly or indirectly on the trains and their running times. We have taken total population, median income, median age, population of white people, travel time, number of commuters, means of transport available and total public transportation for those regions. 
+```{r get_census, message=FALSE, warning=FALSE}
+census <- 
+  get_acs(geography = "tract", 
+          variables = c("B01003_001", "B19013_001", 
+                        "B02001_002", "B08013_001",
+                        "B08012_001", "B08301_001", 
+                        "B08301_010", "B01002_001"), 
+          year = 2018, 
+          state = c("NJ",'NY','PA'),
+          geometry = TRUE, 
+          output = "wide")
+
+census <- census %>%
+  dplyr::rename(Total_Pop =  B01003_001E,
+         Med_Inc = B19013_001E,
+         Med_Age = B01002_001E,
+         White_Pop = B02001_002E,
+         Travel_Time = B08013_001E,
+         Num_Commuters = B08012_001E,
+         Means_of_Transport = B08301_001E,
+         Total_Public_Trans = B08301_010E) %>%
+  select(Total_Pop, Med_Inc, White_Pop, Travel_Time,
+         Means_of_Transport, Total_Public_Trans,
+         Med_Age,
+         GEOID, geometry) %>%
+  mutate(Percent_White = White_Pop / Total_Pop,
+         Mean_Commute_Time = Travel_Time / Total_Public_Trans,
+         Percent_Taking_Public_Trans = Total_Public_Trans / Means_of_Transport) %>% 
+  st_transform('EPSG:2236')
+
+subset_census <- census[st_crop(census, st_bbox(njstations)),]
+
+mapview(st_bbox(census)) +
+  mapview(njstations, cex = 2) +
+  mapview(st_bbox(subset_census), col.regions = "orange")
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = subset_census) +
+  geom_sf(data = njstations %>% st_transform('EPSG:2236'), color = "blue") +
+  mapTheme
+```
+
+
+## Weather Data
+We are collecting weather data for Trenton for the same duration as our original data set (April 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study, it would make sense to include other location's weather data as well.
+
+```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
+#Every hour
+weather.Panel_hourly <- 
+  riem_measures(station = "TTN", date_start = "2018-04-01", date_end = "2018-05-02") %>%
+  dplyr::select(valid, tmpf, p01i, sknt)%>%
+  replace(is.na(.), 0) %>%
+    mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
+    mutate(week = week(interval60),
+           dotw = wday(interval60, label=TRUE)) %>%
+  
+    group_by(interval60) %>%
+    dplyr::summarize(Temperature = max(tmpf),
+              Precipitation = sum(p01i),
+              Wind_Speed = max(sknt)) %>%
+    mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
+glimpse(weather.Panel_hourly)
+#Every day
+weather.Panel_daily <- 
+  riem_measures(station = "TTN", date_start = "2018-04-01", date_end = "2018-05-02") %>%
+  dplyr::select(valid, tmpf, p01i, sknt)%>%
+  replace(is.na(.), 0) %>%
+    mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
+    mutate(week = week(interval60),
+           dotw = wday(interval60, label=TRUE)) %>%
+    group_by(date(interval60)) %>%
+    dplyr::summarize(Temperature = max(tmpf),
+              Precipitation = sum(p01i),
+              Wind_Speed = max(sknt)) %>%
+    mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
+glimpse(weather.Panel_daily)
+```
+
+## Time-space Panel + Weather 
+
+```{r}
+dat_njstation$date <- as.Date(dat_njstation$date)
+dat_njstation <- 
+  dat_njstation %>%
+  left_join(weather.Panel_daily, by = c('date' = 'date(interval60)'))
+```
+
+## Exploratory Data Analysis
+
+### Weather Panel (Hourly)
+
+The below shows the variation of weather (Precipitation, Wind Speed and Temperature) on an hourly basis. 
+
+```{r}
+grid.arrange(
+  ggplot(weather.Panel_hourly, aes(interval60,Precipitation)) + geom_line() + 
+  labs(title="Precipitation", x="Hour", y="Precipitation") + plotTheme,
+  ggplot(weather.Panel_hourly, aes(interval60,Wind_Speed)) + geom_line() + 
+    labs(title="Wind Speed", x="Hour", y="Wind Speed") + plotTheme,
+  ggplot(weather.Panel_hourly, aes(interval60,Temperature)) + geom_line() + 
+    labs(title="Temperature", x="Hour", y="Temperature") + plotTheme,
+  top="Weather Data - Trenton TTN - April, 2018")
+```
+
+### Delay vs Precipitation (Daily)
+
+The bar plot below shows the relation between train delay and precipitation (Rain/Snow).
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  dplyr::summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Precipitation = first(Precipitation)) %>%
+  mutate(isPrecip = ifelse(Precipitation > 0,"Rain/Snow", "None")) %>%
+  group_by(isPrecip) %>%
+  dplyr::summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isPrecip, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does precipitation influence delay?",
+           x="Precipitation", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Delay vs Wind speed (Daily)
+
+The bar plot below shows the relation between train delay and wind speed.
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Wind_Speed = first(Wind_Speed)) %>%
+  mutate(isWind = ifelse(Wind_Speed > 20,"Windy", "None")) %>%
+  group_by(isWind) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isWind, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does windspeed influence delay?",
+           x="Windspeed", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Delay vs Temperature (Daily)
+
+The bar plot below shows the relation between train delay and temperature.
+
+```{r}
+dat_njstation %>%
+  group_by(date) %>% 
+  summarize(delay_minutes = mean(delay_minutes, na.rm=T),
+            Temperature = first(Temperature)) %>%
+  mutate(isHot = ifelse(Temperature > 60,"Hot", "None")) %>%
+  group_by(isHot) %>%
+  summarize(Mean_delay = mean(delay_minutes, na.rm=T)) %>%
+    ggplot(aes(isHot, Mean_delay)) + geom_bar(stat = "identity") +
+      labs(title="Does temperature influence delay?",
+           x="Temperature", y="Mean Delay (Minutes)") +
+      plotTheme
+```
+
+### Distribution of Total delay for different trains
+
+
+
+```{r message=FALSE, warning=FALSE}
+delay_train <- dat_njstation %>%
+  select(train_id, delay_minutes, date) %>%
+  group_by(train_id, date) %>%
+  dplyr::summarize(total_delay = mean(delay_minutes))
+
+ggplot(delay_train, aes(total_delay)) +
+  geom_histogram()
+```
+
+### Distribution for Time of Day
+
+
+
+```{r}
+dat_njstation %>%
+        mutate(time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush"))%>%
+         group_by(interval60, to, time_of_day) %>%
+         dplyr::summarize(avg_delay = mean(delay_minutes)) %>%
+  ggplot()+
+  geom_histogram(aes(avg_delay), binwidth = 5)+
+  labs(title="Average delay across stations for different times of the day, 2018",
+       x="Delay (minutes)", 
+       y="Frequency")+
+  facet_wrap(~time_of_day)+
+  plotTheme
+```
+
+```{r}
+ggplot(
+     dat_njstation %>% mutate(hour = hour(scheduled_time)))+
+     geom_freqpoly(aes(hour, color = dotw), binwidth = 1)+
+    labs(title="Total Delay by day of week for NJ Transit stations, April 2018",
+       x="Hour", 
+       y="Delay (minutes)")+
+     plotTheme
+```
+
+### Distribution across Time and Space
+
+Correct Latitude and Longitude transformations
+```{r}
+coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
+dat_njstation$LONGITUDE = coords$Y
+dat_njstation$LATITUDE = coords$X
+```
+
+The plots shows how the delay varies at different times of the day and and on weekdays and weekends. 
+```{r}
+ggplot()+
+  geom_sf(data = subset_census, size = 0.2)+
+  geom_point(data = dat_njstation %>% st_transform('EPSG:2236') %>% 
+            mutate(hour = hour(scheduled_time),
+                weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
+                time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
+                                 hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
+                                 hour(interval60) >= 10 & hour(interval60) < 15 ~ "Mid-Day",
+                                 hour(interval60) >= 15 & hour(interval60) <= 18 ~ "PM Rush"))%>%
+              group_by(from, LATITUDE, LONGITUDE, weekend, time_of_day) %>%
+              dplyr::summarize(avg_delay = mean(delay_minutes)),
+            aes(x=LONGITUDE, y = LATITUDE, color = avg_delay), 
+            fill = "transparent", alpha = 0.5, size = 1.5)+
+  scale_colour_viridis(direction = -1,
+  discrete = FALSE, option = "D")+
+  facet_grid(weekend ~ time_of_day)+
+  labs(title="Delay (minutes) at different times of the day, April 2018")+
+  mapTheme
+```
+
+
+### Reported Delays per Day
+
+### Total Delays in Minutes per Day
+
+The shows average delay per day for 30 days (Month pf April), 
+
+```{r}
+delay.Panel_hourly <- 
+  dat_njstation %>%
+  group_by(interval60) %>%
+  dplyr::summarise(avg_delay = mean(delay_minutes))
+
+ggplot(delay.Panel_hourly, aes(interval60, avg_delay)) + geom_line() + 
+  labs(title="Average delay for 30 days span", x="Hour", y="Delay in minutes") + plotTheme
+```
+
+## Feature Engineering
+### Distance between Stations
+
+These stations have missing Geometries
+```{r}
+#unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
+# library(geosphere)
+# 
+# dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+# for(i in 1:nrow(dat_njstation)){
+#     if((i %% 20000) == 0){
+#       print(i)
+#     }
+#     row <- dat_njstation[i,]
+#     if(row$from == row$to){
+#       dat_njstation$dist[i] = 0
+#     }
+#     else{
+#       prev_row <- dat_njstation[i-1,]
+#       dat_njstation$dist[i] = distm (c(prev_row$LONGITUDE_map,prev_row$LATITUDE_map), c(row$LONGITUDE_map,row$LATITUDE_map), fun = distHaversine)
+#     }
+# }
+```
+
+```{r}
+#write.csv(as.matrix(dat_njstation %>% select(dist)), file = "dist_variable.csv")
+distance <- read.csv(file = "dist_variable.csv",row.names=1)
+#dat_njstation <- cbind(dat_njstation, distance)
+dat_njstation$dist <- dat_njstation$dist/1609.344
+```
+
+```{r}
+# library(ggmap)
+# 
+# origAddress <- dat_njstation %>% filter(is.na(LATITUDE))
+# 
+# for(i in 1:nrow(origAddress))
+# {
+#   # Print("Working...")
+#   result <- geocode(origAddress$from[i], output = "latlona", source = "google")
+#   origAddress$lon[i] <- as.numeric(result[1])
+#   origAddress$lat[i] <- as.numeric(result[2])
+#   origAddress$geoAddress[i] <- as.character(result[3])
+# }
+```
+
+### Number of stations for a particular route
+```{r message=FALSE, warning=FALSE}
+## Check if same train runs multiple times on a particular day 
+# dat_njstation [duplicated(dat_njstation %>% select(date, train_id, from, to)),]
+
+dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
+  mutate(station_count = 1) %>%
+  group_by(date, train_id) %>%
+  summarise(total_stops = sum(station_count, na.rm=T)) %>%
+  ungroup() %>%
+  right_join(dat_njstation)
+```
+
+### Lag Features
+```{r}
+# dat_2months <- rbind(
+#   read.csv('archive/2018_03.csv'),
+#   read.csv('archive/2018_04.csv')
+# )
+# 
+# dat_2months <- dat_2months %>%
+#   mutate(scheduled_time =  as_datetime(scheduled_time),
+#          actual_time = as_datetime(actual_time),
+#          date = as_date(scheduled_time),
+#          interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour")) %>% 
+#   distinct()
+```
+
+```{r eval=F, include=F}
+# start_date <- as_date('2018-04-01')
+# for(i in 1:nrow(dat_njstation))
+#   {
+#     cur_date <- dat_njstation$date[i]
+#     cur_train_id<- dat_njstation$train_id[i]
+#     cur_from <- dat_njstation$from[i]
+#     cur_to <- dat_njstation$to[i]
+#     
+#     dat_2months_filter <- dat_2months %>% 
+#       filter(
+#         date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
+#         train_id == cur_train_id, from == cur_from, to == cur_to) %>%
+#       select(date, delay_minutes)
+#     
+#     if(i %% 10000 == 0){
+#       print(i)
+#     }
+#     
+#     dat_njstation$lag_1day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 1) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_2day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 2) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_7day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 7) %>%
+#       select(delay_minutes)
+#     dat_njstation$lag_14day[i] <- dat_2months_filter %>% 
+#       filter(date == cur_date - 14) %>%
+#       select(delay_minutes)
+#   }
+```
+
+```{r eval=F}
+# get_lagvars <- function(dat_njstation_row){
+#     #print(dat_njstation_row)
+#     cur_date <- dat_njstation_row$date
+#     cur_train_id<- dat_njstation_row$train_id
+#     cur_from <- dat_njstation_row$from
+#     cur_to <- dat_njstation_row$to
+#     
+#     dat_2months_filter <- dat_2months %>% 
+#       filter(
+#         date %in% c(cur_date - 1, cur_date - 2, cur_date - 7, cur_date - 14),
+#         train_id == cur_train_id, from == cur_from, to == cur_to) %>%
+#       select(date, delay_minutes)
+# 
+#     
+#     lag_1day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 1) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_1day)[1] == 0) { lag_1day <- NA }
+#     else { lag_1day <- lag_1day[[1]] }
+#     
+#     lag_2day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 2) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_2day)[1] == 0) { lag_2day <- NA }
+#     else { lag_2day <- lag_2day[[1]] }
+#     
+#     lag_7day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 7) %>%
+#       select(delay_minutes)
+#     
+#     if (dim(lag_7day)[1] == 0) { lag_7day <- NA }
+#     else { lag_7day <- lag_7day[[1]] }
+#     
+#     lag_14day <- dat_2months_filter %>% 
+#       filter(date == cur_date - 14) %>%
+#       select(delay_minutes)
+#     
+#    if (dim(lag_14day)[1] == 0) { lag_14day <- NA }
+#     else { lag_14day <- lag_14day[[1]] }
+#     
+#     return(list("lag_1day" = lag_1day, "lag_2day" = lag_2day, 
+#                 "lag_1week" = lag_7day, "lag_2week" = lag_14day))
+# }
+
+#sampled_dat_njstation <- sample_n(dat_njstation, 10)
+
+#library(plyr)
+#Uncomment first time
+#dat_lag <- apply(dat_njstation, 1, get_lagvars)
+#result <- as.data.frame(do.call(rbind, dat_lag))
+```
+
+```{r eval=F, include=F}
+#write.csv(as.matrix(result %>% select(lag_1week, lag_2week)), file = "lag_variables_week.csv")
+#write.csv(as.matrix(result), file = "lag_variables.csv")
+#write.csv(as.matrix(dat_njstation), file = "dat_njstation.csv")
+```
+
+```{r include=F}
+lag_features <- read.csv(file = "lag_variables.csv",row.names=1)
+dat_njstation <- cbind(dat_njstation, lag_features)
+```
+
+```{r}
+dat_njstation <- dat_njstation %>%
+  mutate(l1dlog = log(lag_1day),
+         l1wlog = log(lag_1week),
+         l2wlog = log(lag_2week),
+         delog = log(delay_minutes),
+         l1ds = lag_1day*lag_1day,
+         l1ws = lag_1week*lag_1week,
+         l2ws = lag_2week*lag_2week)
+plotData.lag <- as.data.frame(dat_njstation) %>%
+  filter(week == 17) %>%
+  #dplyr::select(lag_1day, lag_1week, lag_2week, delay_minutes) %>%
+  dplyr::select(l1ds, l1ws, l2ws, delay_minutes) %>%
+  gather(Variable, Value, -delay_minutes) %>%
+  mutate(Variable = fct_relevel(Variable, "lag_1day","lag_1week","lag_2week"))
+
+#Correlation scatter plots
+plotData.lag %>% 
+  ggplot(aes(Value, delay_minutes)) +
+  geom_point(size = .5) + geom_smooth(method = "lm", se=F, colour = "#FA7800") +
+  facet_wrap(~Variable, ncol = 3, scales = "free") +
+  labs(title = "Delay per station as a function of time lags",
+       subtitle = "One week in April, 2018") +
+  plotTheme
+```
+
+### Critical Station variable
+How many trains cross a particular station?
+```{r}
+# njstation_critical_station <- dat_njstation %>%
+#   group_by(to, train_id) %>%
+#   dplyr::summarise(critical = n()) %>%
+#   ungroup()
+
+dat_njstation <- dat_njstation %>%
+  group_by(to) %>%
+  mutate(critical = n_distinct(train_id)) %>%
+  ungroup()
+
+ggplot() +
+  geom_histogram(data = dat_njstation, aes(critical))
+```
+
+### Congestion variable
+For a particular station, how many trains cross in that particular hour?
+```{r}
+njstation_cong <- dat_njstation %>%
+  group_by(to, interval60) %>%
+  dplyr::summarise(congestion = n()) %>%
+  ungroup()
+
+dat_njstation <- dat_njstation %>% left_join(njstation_cong)
+```
+
+
+```{r}
+one_day <- 
+  dat_njstation %>%
+  filter(date == as_date('2018-04-15'))
+
+one_day.panel <-
+  expand.grid(
+    interval60 = unique(one_day$interval60),
+    to = unique(one_day$to))
+```
+
+
+
+```{r}
+ride.animation.data <-
+  mutate(one_day, Congestion_Counter = 1) %>%
+  right_join(one_day.panel) %>% 
+  group_by(interval60, to, LATITUDE, LONGITUDE) %>%
+  dplyr::summarize(Congestion = sum(Congestion_Counter, na.rm=T)) %>% 
+  ungroup() %>% 
+  na.omit() %>%
+  st_as_sf(., coords = c("LATITUDE","LONGITUDE"), crs = 3701) %>%
+  st_set_crs(st_crs(subset_census)) %>%
+  mutate(Trains = case_when(Congestion == 0 ~ "0 trains",
+                           Congestion > 0 & Congestion <= 2 ~ "1-2 trains",
+                           Congestion > 2 & Congestion <= 4 ~ "3-4 trains",
+                           Congestion > 4 & Congestion <= 6 ~ "5-6 trains",
+                           Congestion > 6 ~ "6+ trains")) %>%
+  mutate(Delays = factor(Trains))
+```
+
+```{r}
+rideshare_animation <-
+  ggplot() +
+  geom_sf(data = subset_census) +
+  geom_sf(data = ride.animation.data, aes(color = Trains)) +
+  scale_fill_manual(values = palette3) +
+  labs(title = "Number of trains in every station for one day in April 2018",
+       subtitle = "1 hour intervals: {current_frame}") +
+  transition_manual(interval60) +
+  mapTheme
+
+animate(rideshare_animation, duration=20, renderer = gifski_renderer())
+```
+
+```{r}
+#anim_save("trains_local", rideshare_animation, duration=20, renderer = gifski_renderer())
+```
+
+### Creating custom dependant variable - diff_delay
+
+<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
+<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
+```{r}
+dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+
+# for(i in 1:nrow(dat_njstation)){
+#     if((i %% 20000) == 0){
+#       print(i)
+#     }
+#     row <- dat_njstation[i,]
+#     if(row$from == row$to){
+#       dat_njstation$diff_delay[i] = 0
+#     }
+#     else{
+#       prev_row <- dat_njstation[i-1,]
+#       dat_njstation$diff_delay[i] = row$actual_time - prev_row$actual_time - 
+#         (row$scheduled_time - prev_row$scheduled_time)
+#     }
+# }
+```
+
+```{r}
+#write.csv(as.matrix(dat_njstation %>% select(diff_delay)), file = "diff_delay_variable.csv")
+diff_delay_var <- read.csv("diff_delay_variable.csv")
+dat_njstation <- cbind(dat_njstation, diff_delay_var$diff_delay)
+```
+
+### Correlation plot for Continuous numeric features
+
+## Building Model
+
+### Split Data into Train and Test
+```{r}
+dat.Train <- filter(dat_njstation, week < 17)
+dat.Test <- filter(dat_njstation, week >= 17)
+```
+
+```{r}
+rbind(
+  mutate(dat.Train, Legend = "Training"), 
+  mutate(dat.Test, Legend = "Testing")) %>%
+    group_by(Legend, interval60) %>% 
+      dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
+      ungroup() %>% 
+      ggplot(aes(interval60, Trip_Delay, color = Legend)) + geom_line() +
+        scale_colour_manual(values = palette2) +
+        labs(title="Mean Delay across all train lines",
+             x="Day", y="Trip Delay (minutes)") +
+        plotTheme + theme(panel.grid.major = element_blank())
+```
+
+```{r message=FALSE, warning=FALSE}
+dat_njstation %>%
+  group_by(line, date) %>% 
+  dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>% 
+  ggplot(aes(date, Trip_Delay, color = line)) + geom_line() +
+        #scale_colour_manual(values = palette2) +
+  labs(title="Mean Delay across all train lines",
+        x="Day", y="Trip Delay (minutes)") +
+  plotTheme + theme(panel.grid.major = element_blank())
+```
+
+```{r message=FALSE, warning=FALSE}
+dat_njstation %>%
+  group_by(line, date) %>% 
+  filter(line == "northeast corrdr") %>%
+  dplyr::summarize(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>% 
+  ggplot(aes(date, Trip_Delay, color = line)) + geom_line(size=1) +
+  # scale_x_date(
+  #   breaks = function(x) seq.Date(from = min(x), to = max(x), by = "5 days"),
+  #   minor_breaks = function(x) seq.Date(from = min(x), to = max(x), by = "1 day")) +
+        #scale_colour_manual(values = palette2) +
+  labs(title="Mean Delay across all train lines",
+        x="Day", y="Trip Delay (minutes)") +
+  plotTheme
+```
+```{r}
+dat_njstation %>%
+  filter(to == "New York Penn Station") %>% 
+  group_by(dotw) %>%
+  dplyr::summarise(Trip_Delay = mean(delay_minutes)) %>%
+  ungroup() %>%
+  ggplot(aes(dotw, Trip_Delay)) + geom_histogram(size=1, stat="identity", fill="blue") +
+  plotTheme + labs(title="Mean delay per day")
+```
+### Training model : First model
+Trained using actual delay_minutes as the dependent variable.
+
+```{r}
+# reg1 <- 
+#   lm(delay_minutes ~ train_id + dotw + Wind_Speed + Temperature + Precipitation, data = dat.Train)
+# 
+# summary(reg1)$r.squared
+# summary(reg1)$adj.r.squared
+```
+
+```{r}
+reg2 <- 
+  lm(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data = dat.Train)
+
+summary(reg2)$r.squared
+summary(reg2)$adj.r.squared
+
+#[1] 0.1740455
+#[1] 0.1675164
+```
+
+```{r}
+library(randomForest)
+require(caTools)
+rf <- randomForest(
+  delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data=dat.Train)
+```
+```{r}
+summary(rf)
+```
+
+
+### Predicting for test data
+We use nested data for the testing part. 
+
+```{r nest_data, cache = TRUE, warning = FALSE, message = FALSE}
+dat.Test.weekNest <- 
+  dat.Test %>%
+  nest(-week) 
+```
+na.action=na.exclude
+
+When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
+
+```{r predict_function, cache = TRUE}
+model_pred <- function(dat, fit){
+   pred <- predict(fit, newdata = dat)}
+```
+
+
+```{r do_predicitons, cache = TRUE}
+week_predictions <- 
+  dat.Test.weekNest %>% 
+    mutate(#ATime_FE = map(.x = data, fit = reg1, .f = model_pred),
+           BSpace_FE = map(.x = data, fit = reg2, .f = model_pred),
+           #CTime_Space_FE = map(.x = data, fit = reg3, .f = model_pred),
+           #DTime_Space_FE_timeLags = map(.x = data, fit = reg4, .f = model_pred),
+           #ETime_Space_FE_timeLags_holidayLags = map(.x = data, fit = reg5, .f = model_pred)
+           ) %>% 
+    gather(Regression, Prediction, -data, -week) %>%
+    mutate(Observed = map(data, pull, delay_minutes),
+           Absolute_Error = map2(Observed, Prediction,  ~ abs(.x - .y)),
+           MAE = map_dbl(Absolute_Error, mean, na.rm = TRUE),
+           sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE))
+week_predictions
+```
+
+### Cross validation
+
+We perform cross validation (LOGO) across time by grouping them by the hours.  
+
+```{r}
+crossValidate <- function(dataset, id, dependentVariable, indVariables) {
+  
+  allPredictions <- data.frame()
+  cvID_list <- unique(dataset[[id]])
+  
+  for (i in cvID_list) {
+    
+    thisFold <- i
+    #cat("This hold out fold is", thisFold, "\n")
+    
+    fold.train <- filter(dataset, dataset[[id]] != thisFold) %>% as.data.frame() %>% 
+      dplyr::select(indVariables, dependentVariable)
+    fold.test  <- filter(dataset, dataset[[id]] == thisFold) %>% as.data.frame() %>% 
+      dplyr::select(indVariables, dependentVariable)
+    regression <-
+      lm(delay_minutes ~ ., family = "poisson", data=fold.train)
+    
+    thisPrediction <- 
+      mutate(fold.test, Prediction = predict(regression, fold.test, type = "response", na.action = na.pass))
+    
+    allPredictions <-
+      rbind(allPredictions, thisPrediction)
+    
+  }
+  return(allPredictions)
+}
+```
+
+```{r }
+
+find_na_rows <- function(data){
+  M <- sapply(data, function(x) sum(is.na(x)));
+  print(M[M>0][[1]])
+}
+
+#nas <- dat_njstation %>% filter (is.na(Temperature))
+
+# find_na_rows(dat_njstation %>% select("dotw"))
+# find_na_rows(dat_njstation %>% select("Temperature"))
+# find_na_rows(dat_njstation %>% select("Precipitation"))
+# find_na_rows(dat_njstation %>% select("delay_minutes"))
+#find_na_rows(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes"))
+#print(nrow(dat_njstation %>% select("dotw", "Temperature","Precipitation","delay_minutes")))
+```
+
+
+```{r message=FALSE, warning=FALSE, results=F}
+dat_njstation <- dat_njstation %>% 
+  mutate(dotw_id = wday(scheduled_time))
+
+ind.vars <- c("dotw_id", "Temperature","Precipitation", "train_id", "from", "to")
+
+reg.cv <- crossValidate(
+  dataset = dat_njstation,
+  id = "dotw_id",
+  dependentVariable = "delay_minutes",
+  indVariables = ind.vars)
+```
+
+<!-- ### Training model : Second model -->
+
+<!-- Trained using estimated delay as the dependent variable. -->
+<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
+<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
+
+### Evaluation
+
+
+There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
+
+
+
+
+
+
+

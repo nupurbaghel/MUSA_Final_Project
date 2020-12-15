@@ -9,12 +9,10 @@ toc_float: true
 code_folding: "hide"
 code_download: true
 ---
-
   
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ```{r setup_13, message=FALSE, include=FALSE}
 library(tidyverse)
@@ -110,6 +108,7 @@ census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
 # Import Data
 
 ## Kaggle Train Delay dataset
+The Kaggle Train Delay dataset contains delay data from Amtrak and NJ Transit trains. 
 ```{r}
 # dat_2018_03 = read.csv('archive/2018_03.csv')
 # dat_2018_04 = read.csv('archive/2018_04.csv')
@@ -141,17 +140,12 @@ print(M[M>0][[1]])
 print(nrow(dat %>% filter(type != "NJ Transit")))
 ```
 
-```{r}
-dat_njstation[51,]
-```
 
+## New Jersey Rail Stations dataset
+The NJ stations dataset consists of coordinates for the stations that the kaggle train delay dataset consists of. We are not considering Amtrak stations as the delay data is not available for them in the dataset.   
 ```{r}
-dat_njstation[52,]
-```
-## New Jersey Rail Lines and Rail Stations dataset
-```{r}
-njlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
-  st_transform('EPSG:2236')
+#jlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
+  #st_transform('EPSG:2236')
 
 njstations <- st_read('Railroad_Stations_in_NJ-shp/Railroad_Stations_in_NJ.shp') %>%
   st_transform('EPSG:2236') %>%
@@ -164,22 +158,13 @@ amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
 ```
 
-
+The histogram below shows the frequency distribution of delay (in minutes) for the month of April 2018. We can observe that most trains are in the lower delay range. Few trains have more dalays. 
 
 ```{r}
 hist(dat$delay_minutes)
 ```
 
-```{r message=FALSE, warning=FALSE}
-subset_amtrak <- st_crop(amtrak, st_bbox(njstations))
-
-ggplot() +
-  geom_sf(data = subset_amtrak, color = "black") +
-  geom_sf(data = njlines, color = "blue") +
-  mapTheme
-```
-
-```{r}
+```{r include = FALSE}
 # dat - nj (geometry)
 # atl. city line - ATLANTIC CITY RAIL LINE
 # bergen co. line - BERGEN COUNTY LINE, HUDSON BERGEN LIGHT RAIL
@@ -210,7 +195,11 @@ ggplot() +
   #left_join(amtrak, by = c('from' = 'CITY2'))
 #dat_amtrak_to <- dat_amtrak %>%
   #left_join(amtrak, by = c('to' = 'CITY2'))
+```
 
+Some of the stations names are slightly different, though they point to the same station. Here, we are standardizing those. 
+
+```{r}
 
 dat <- dat %>%
   mutate(new_line_name_geo = case_when(
@@ -226,7 +215,9 @@ dat <- dat %>%
                   ))
 
 dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit() 
+```
 
+```{r include = FALSE}
 # dat_nj_line <- dat_nj %>%
 #   left_join(njlines, by = c('new_line_name_geo' = 'RAIL_LINE'))
 
@@ -247,7 +238,9 @@ dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit()
 # 
 # dat_njstation <- dat_nj %>%
 #   left_join(njstations, by = c('from' = 'STATION', 'new_line_name_geo' = 'new_line'))
+```
 
+```{r}
 dat_njstation <- dat_nj %>%
   left_join(njstations.first, by = c('to' = 'STATION'))
 
@@ -259,6 +252,8 @@ nas <- dat_njstation %>%
 ```
 
 # Getting coordinates of missing stations 
+
+There are around 26 stations with missing Latitude, Longitude and geometry. This section uses NJ Stations data's coordinates to fill up the missing values in the main dataset.    
 ```{r}
 #miss <- dat_njstation[(is.na(dat_njstation$RAIL_LINE)), ] %>% select(to) 
 dat_njstation <- dat_njstation %>%
@@ -396,7 +391,7 @@ st_as_sf(., coords = c("LONGITUDE_geo", "LATITUDE_geo"), crs = 3701)
 ```
 
 ## Census Data
-Collecting census data for States - New Jersey, New York and Pennsylvania
+Collecting census data for States - New Jersey, New York and Pennsylvania. We have imported factors which we think may have some influence directly or indirectly on the trains and their running times. We have taken total population, median income, median age, population of white people, travel time, number of commuters, means of transport available and total public transportation for those regions. 
 ```{r get_census, message=FALSE, warning=FALSE}
 census <- 
   get_acs(geography = "tract", 
@@ -426,17 +421,13 @@ census <- census %>%
          Mean_Commute_Time = Travel_Time / Total_Public_Trans,
          Percent_Taking_Public_Trans = Total_Public_Trans / Means_of_Transport) %>% 
   st_transform('EPSG:2236')
-```
 
-```{r}
 subset_census <- census[st_crop(census, st_bbox(njstations)),]
 
-# mapview(st_bbox(census)) +
-#   mapview(njstations, cex = 2) +
-#   mapview(st_bbox(subset_census), col.regions = "orange")
-
+mapview(st_bbox(census)) +
+  mapview(njstations, cex = 2) +
+  mapview(st_bbox(subset_census), col.regions = "orange")
 ```
-
 
 ```{r}
 ggplot() +
@@ -447,7 +438,7 @@ ggplot() +
 
 
 ## Weather Data
-Collecting weather data for Trenton for the same duration as our original data set (March 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study it would make sense to include other location's weather data as well.
+We are collecting weather data for Trenton for the same duration as our original data set (April 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study, it would make sense to include other location's weather data as well.
 
 ```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
 #Every hour
@@ -458,6 +449,7 @@ weather.Panel_hourly <-
     mutate(interval60 = ymd_h(substr(valid,1,13))) %>%
     mutate(week = week(interval60),
            dotw = wday(interval60, label=TRUE)) %>%
+  
     group_by(interval60) %>%
     dplyr::summarize(Temperature = max(tmpf),
               Precipitation = sum(p01i),
@@ -491,7 +483,9 @@ dat_njstation <-
 
 ## Exploratory Data Analysis
 
-### Weather Panel 
+### Weather Panel (Hourly)
+
+The below shows the variation of weather (Precipitation, Wind Speed and Temperature) on an hourly basis. 
 
 ```{r}
 grid.arrange(
@@ -505,6 +499,8 @@ grid.arrange(
 ```
 
 ### Delay vs Precipitation (Daily)
+
+The bar plot below shows the relation between train delay and precipitation (Rain/Snow).
 
 ```{r}
 dat_njstation %>%
@@ -520,7 +516,9 @@ dat_njstation %>%
       plotTheme
 ```
 
-### Delay vs Windspeed (Daily)
+### Delay vs Wind speed (Daily)
+
+The bar plot below shows the relation between train delay and wind speed.
 
 ```{r}
 dat_njstation %>%
@@ -537,6 +535,9 @@ dat_njstation %>%
 ```
 
 ### Delay vs Temperature (Daily)
+
+The bar plot below shows the relation between train delay and temperature.
+
 ```{r}
 dat_njstation %>%
   group_by(date) %>% 
@@ -552,6 +553,9 @@ dat_njstation %>%
 ```
 
 ### Distribution of Total delay for different trains
+
+
+
 ```{r message=FALSE, warning=FALSE}
 delay_train <- dat_njstation %>%
   select(train_id, delay_minutes, date) %>%
@@ -563,6 +567,9 @@ ggplot(delay_train, aes(total_delay)) +
 ```
 
 ### Distribution for Time of Day
+
+
+
 ```{r}
 dat_njstation %>%
         mutate(time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
@@ -591,18 +598,19 @@ ggplot(
 ```
 
 ### Distribution across Time and Space
-Correct Latitude andLongitude transformations
+
+Correct Latitude and Longitude transformations
 ```{r}
 coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
-dat_njstation$LONGITUDE = coords$X
-dat_njstation$LATITUDE = coords$Y
+dat_njstation$LONGITUDE = coords$Y
+dat_njstation$LATITUDE = coords$X
 ```
 
-Generate faceted plot of train delay for different times of day vs weekend and weekday 
+The plots shows how the delay varies at different times of the day and and on weekdays and weekends. 
 ```{r}
 ggplot()+
   geom_sf(data = subset_census, size = 0.2)+
-  geom_point(data = dat_njstation %>% 
+  geom_point(data = dat_njstation %>% st_transform('EPSG:2236') %>% 
             mutate(hour = hour(scheduled_time),
                 weekend = ifelse(dotw %in% c("Sun", "Sat"), "Weekend", "Weekday"),
                 time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
@@ -624,6 +632,9 @@ ggplot()+
 ### Reported Delays per Day
 
 ### Total Delays in Minutes per Day
+
+The shows average delay per day for 30 days (Month pf April), 
+
 ```{r}
 delay.Panel_hourly <- 
   dat_njstation %>%
@@ -640,22 +651,29 @@ ggplot(delay.Panel_hourly, aes(interval60, avg_delay)) + geom_line() +
 These stations have missing Geometries
 ```{r}
 #unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
-library(geosphere)
+# library(geosphere)
+# 
+# dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+# for(i in 1:nrow(dat_njstation)){
+#     if((i %% 20000) == 0){
+#       print(i)
+#     }
+#     row <- dat_njstation[i,]
+#     if(row$from == row$to){
+#       dat_njstation$dist[i] = 0
+#     }
+#     else{
+#       prev_row <- dat_njstation[i-1,]
+#       dat_njstation$dist[i] = distm (c(prev_row$LONGITUDE_map,prev_row$LATITUDE_map), c(row$LONGITUDE_map,row$LATITUDE_map), fun = distHaversine)
+#     }
+# }
+```
 
-dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
-for(i in 1:nrow(dat_njstation)){
-    if((i %% 20000) == 0){
-      print(i)
-    }
-    row <- dat_njstation[i,]
-    if(row$from == row$to){
-      dat_njstation$dist[i] = 0
-    }
-    else{
-      prev_row <- dat_njstation[i-1,]
-      dat_njstation$dist[i] = distm (c(prev_row$LONGITUDE_map,prev_row$LATITUDE_map), c(row$LONGITUDE_map,row$LATITUDE_map), fun = distHaversine)
-    }
-}
+```{r}
+#write.csv(as.matrix(dat_njstation %>% select(dist)), file = "dist_variable.csv")
+distance <- read.csv(file = "dist_variable.csv",row.names=1)
+#dat_njstation <- cbind(dat_njstation, distance)
+dat_njstation$dist <- dat_njstation$dist/1609.344
 ```
 
 ```{r}
@@ -678,7 +696,7 @@ for(i in 1:nrow(dat_njstation)){
 ## Check if same train runs multiple times on a particular day 
 # dat_njstation [duplicated(dat_njstation %>% select(date, train_id, from, to)),]
 
-dat_njstation <- dat_njstation %>%
+dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
   mutate(station_count = 1) %>%
   group_by(date, train_id) %>%
   summarise(total_stops = sum(station_count, na.rm=T)) %>%
@@ -688,17 +706,17 @@ dat_njstation <- dat_njstation %>%
 
 ### Lag Features
 ```{r}
-dat_2months <- rbind(
-  read.csv('archive/2018_03.csv'),
-  read.csv('archive/2018_04.csv')
-)
-
-dat_2months <- dat_2months %>%
-  mutate(scheduled_time =  as_datetime(scheduled_time),
-         actual_time = as_datetime(actual_time),
-         date = as_date(scheduled_time),
-         interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour")) %>% 
-  distinct()
+# dat_2months <- rbind(
+#   read.csv('archive/2018_03.csv'),
+#   read.csv('archive/2018_04.csv')
+# )
+# 
+# dat_2months <- dat_2months %>%
+#   mutate(scheduled_time =  as_datetime(scheduled_time),
+#          actual_time = as_datetime(actual_time),
+#          date = as_date(scheduled_time),
+#          interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour")) %>% 
+#   distinct()
 ```
 
 ```{r eval=F, include=F}
@@ -802,9 +820,18 @@ dat_njstation <- cbind(dat_njstation, lag_features)
 ```
 
 ```{r}
+dat_njstation <- dat_njstation %>%
+  mutate(l1dlog = log(lag_1day),
+         l1wlog = log(lag_1week),
+         l2wlog = log(lag_2week),
+         delog = log(delay_minutes),
+         l1ds = lag_1day*lag_1day,
+         l1ws = lag_1week*lag_1week,
+         l2ws = lag_2week*lag_2week)
 plotData.lag <- as.data.frame(dat_njstation) %>%
   filter(week == 17) %>%
-  dplyr::select(lag_1day, lag_1week, lag_2week, delay_minutes) %>%
+  #dplyr::select(lag_1day, lag_1week, lag_2week, delay_minutes) %>%
+  dplyr::select(l1ds, l1ws, l2ws, delay_minutes) %>%
   gather(Variable, Value, -delay_minutes) %>%
   mutate(Variable = fct_relevel(Variable, "lag_1day","lag_1week","lag_2week"))
 
@@ -826,13 +853,13 @@ How many trains cross a particular station?
 #   dplyr::summarise(critical = n()) %>%
 #   ungroup()
 
-njstation_critical_station <- dat_njstation %>%
+dat_njstation <- dat_njstation %>%
   group_by(to) %>%
   mutate(critical = n_distinct(train_id)) %>%
   ungroup()
 
 ggplot() +
-  geom_histogram(data = njstation_critical_station, aes())
+  geom_histogram(data = dat_njstation, aes(critical))
 ```
 
 ### Congestion variable
@@ -868,7 +895,7 @@ ride.animation.data <-
   dplyr::summarize(Congestion = sum(Congestion_Counter, na.rm=T)) %>% 
   ungroup() %>% 
   na.omit() %>%
-  st_as_sf(., coords = c("LONGITUDE", "LATITUDE"), crs = 3701) %>%
+  st_as_sf(., coords = c("LATITUDE","LONGITUDE"), crs = 3701) %>%
   st_set_crs(st_crs(subset_census)) %>%
   mutate(Trains = case_when(Congestion == 0 ~ "0 trains",
                            Congestion > 0 & Congestion <= 2 ~ "1-2 trains",
@@ -918,10 +945,11 @@ dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
 #     }
 # }
 ```
+
 ```{r}
 #write.csv(as.matrix(dat_njstation %>% select(diff_delay)), file = "diff_delay_variable.csv")
 diff_delay_var <- read.csv("diff_delay_variable.csv")
-dat_njstation <- cbind(dat_njstation, diff_delay_var)
+dat_njstation <- cbind(dat_njstation, diff_delay_var$diff_delay)
 ```
 
 ### Correlation plot for Continuous numeric features
@@ -997,8 +1025,7 @@ Trained using actual delay_minutes as the dependent variable.
 
 ```{r}
 reg2 <- 
-  lm(delay_minutes ~ from + to + dotw + train_id + Wind_Speed + Temperature + Precipitation,
-     data = dat.Train)
+  lm(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data = dat.Train)
 
 summary(reg2)$r.squared
 summary(reg2)$adj.r.squared
@@ -1006,6 +1033,17 @@ summary(reg2)$adj.r.squared
 #[1] 0.1740455
 #[1] 0.1675164
 ```
+
+```{r}
+library(randomForest)
+require(caTools)
+rf <- randomForest(
+  delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data=dat.Train)
+```
+```{r}
+summary(rf)
+```
+
 
 ### Predicting for test data
 We use nested data for the testing part. 
@@ -1015,6 +1053,7 @@ dat.Test.weekNest <-
   dat.Test %>%
   nest(-week) 
 ```
+na.action=na.exclude
 
 When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
 
