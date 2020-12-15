@@ -672,8 +672,8 @@ These stations have missing Geometries
 ```{r}
 #write.csv(as.matrix(dat_njstation %>% select(dist)), file = "dist_variable.csv")
 distance <- read.csv(file = "dist_variable.csv",row.names=1)
-#dat_njstation <- cbind(dat_njstation, distance)
-dat_njstation$dist <- dat_njstation$dist/1609.344
+dat_njstation <- cbind(dat_njstation, distance)
+dat_njstation$dist <- dat_njstation$X/1609.344
 ```
 
 ```{r}
@@ -949,7 +949,8 @@ dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
 ```{r}
 #write.csv(as.matrix(dat_njstation %>% select(diff_delay)), file = "diff_delay_variable.csv")
 diff_delay_var <- read.csv("diff_delay_variable.csv")
-dat_njstation <- cbind(dat_njstation, diff_delay_var$diff_delay)
+a <- diff_delay_var$diff_delay
+dat_njstation <- cbind(dat_njstation, as.data.frame(a))
 ```
 
 ### Correlation plot for Continuous numeric features
@@ -1024,11 +1025,11 @@ Trained using actual delay_minutes as the dependent variable.
 ```
 
 ```{r}
-reg2 <- 
-  lm(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data = dat.Train)
-
-summary(reg2)$r.squared
-summary(reg2)$adj.r.squared
+# reg2 <- 
+#   lm(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data = dat.Train)
+# 
+# summary(reg2)$r.squared
+# summary(reg2)$adj.r.squared
 
 #[1] 0.1740455
 #[1] 0.1675164
@@ -1037,11 +1038,31 @@ summary(reg2)$adj.r.squared
 ```{r}
 library(randomForest)
 require(caTools)
-rf <- randomForest(
-  delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + diff_delay, na.action = na.exclude, data=dat.Train)
+rf <- randomForest(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train, method = "parRF", ntree = 50)
 ```
+
 ```{r}
-summary(rf)
+summary(rf$mse)
+rf
+```
+
+```{r}
+# rf100 <- randomForest(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train, method = "parRF", ntree = 100)
+```
+
+```{r}
+# summary(rf100$mse)
+# rf100
+```
+
+```{r}
+# library(ISLR)
+# require(tree)
+# dtree <- tree(delay_minutes ~ from + to + total_stops + hour + dotw + train_id + Wind_Speed + Temperature + Precipitation + dist + lag_1day + lag_1week + lag_2week + congestion + critical + a, na.action = na.exclude, data = dat.Train)
+```
+
+```{r}
+#summary(dtree)
 ```
 
 
@@ -1058,8 +1079,9 @@ na.action=na.exclude
 When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
 
 ```{r predict_function, cache = TRUE}
-model_pred <- function(dat, fit){
-   pred <- predict(fit, newdata = dat)}
+pred = as.data.frame(predict(rf, newdata=dat.Test %>% select(from, to, total_stops, hour, dotw, train_id, Wind_Speed, Temperature, Precipitation, dist, lag_1day, lag_1week, lag_2week, congestion, critical, a), na.action = na.exclude))
+library(Metrics)
+mse(pred[,1], dat.Test[,11])
 ```
 
 
