@@ -953,6 +953,12 @@ a <- diff_delay_var$diff_delay
 dat_njstation <- cbind(dat_njstation, as.data.frame(a))
 ```
 
+```{r}
+dat_njstation$lag_1day[is.na(dat_njstation$lag_1day)] <- 0
+dat_njstation$lag_1week[is.na(dat_njstation$lag_1week)] <- 0
+dat_njstation$lag_2week[is.na(dat_njstation$lag_2week)] <- 0
+```
+
 ### Correlation plot for Continuous numeric features
 
 ## Building Model
@@ -1079,9 +1085,9 @@ na.action=na.exclude
 When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
 
 ```{r predict_function, cache = TRUE}
-pred = as.data.frame(predict(rf, newdata=dat.Test %>% select(from, to, total_stops, hour, dotw, train_id, Wind_Speed, Temperature, Precipitation, dist, lag_1day, lag_1week, lag_2week, congestion, critical, a), na.action = na.exclude))
+pred = predict(rf, newdata=dat.Test %>% select(from, to, total_stops, hour, dotw, train_id, Wind_Speed, Temperature, Precipitation, dist, lag_1day, lag_1week, lag_2week, congestion, critical, a), na.action = na.exclude)
 library(Metrics)
-mse(pred[,1], dat.Test[,11])
+mse(pred, dat.Test[,11])
 ```
 
 
