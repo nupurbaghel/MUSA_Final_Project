@@ -4,10 +4,10 @@ author: "Nupur Baghel, Shivani Rai"
 date: "December 15th, 2020"
 output: 
   html_document:
-  toc: true
-toc_float: true
-code_folding: "hide"
-code_download: true
+    toc: true
+    toc_float: true
+    code_folding: "hide"
+    code_download: true
 ---
   
 ```{r setup, include=FALSE}
@@ -36,6 +36,8 @@ library(randomForest)
 require(caTools)
 library(Metrics)
 library(stargazer)
+
+set.seed(42)
 
 mapTheme <- function(base_size = 12) {
   theme(
@@ -83,7 +85,7 @@ mapTheme <- theme(plot.title =element_text(size=12),
                   panel.grid.minor=element_blank(),
                   legend.direction = "vertical", 
                   legend.position = "right",
-                  plot.margin = margin(1, 1, 1, 1, 'cm'),
+                  plot.margin = element_text(margin = ggplot2::margin(1, 1, 1, 1, 'cm')),
                   legend.key.height = unit(1, "cm"), legend.key.width = unit(0.2, "cm"))
 
 palette5 <- c("#eff3ff","#bdd7e7","#6baed6","#3182bd","#08519c")
@@ -109,14 +111,24 @@ q5 <- function(variable) {as.factor(ntile(variable, 5))}
 census_api_key("e79f3706b6d61249968c6ce88794f6f556e5bf3d", overwrite = TRUE)
 ```
 
+# Introduction - Predicting Train Delays
+
+NJ Transit is considered to have very complex dynamics affecting tens of thousands of people everyday as per a blog post. And it is the case with numerous other transit systems too. Many people rely on these transportation systems for their daily commute and delays may leave them irritated and dissatisfied with the system. Train delays leading to missed connecting trains/flights, miss opportunities, etc. may drive away customers, who are a key source of income here. One way this can be dealt with is by making sure that all trains are on time. But, in this non-ideal world, it is really difficult to maintain such perfection due to various unforeseen circumstances. Thus, train delay predictions come into the picture. We do have many apps that track the status of the trains live, but such applications will not help users plan their trips early on.   
+
+As already mentioned, trains delays are a cause of concern for many commuters as it is pretty random, or at least that is what it seems like to some people. Train delays can definitely be predicted to some extent provided there is up-to-date accurate data to learn the patterns from. Most times, train delays are due to random problems such as fallen trees blocking the track or technical issues with the train which can be approximated with the utilization of certain variables, which we have capitalized on in this project. These predictions can be used either by the commuters or by the authorities. The application will help the users commute reliably and more effectively, allowing them to plan hours or days prior to their journey, allowing them to make informed decisions. They can schedule their trips efficiently and choose days with low probability of delay if they have a flexible appointments or choose earlier trains to make it to their destination on time. This application can also be used by the authorities to counter expected train delays. But we will be focusing in designing an application to help the commuters.
+
+The link to our youtube video: 
+
 # Import Data
 
+We are using multiple datasets to account for as many factors as possible. The Kaggle Train Delay dataset contains Amtrak and NJ Transit delay data. We are also using the New Jersey Stations dataset for station coordinates. We loaded the census data to account for the socio-economic factors, if any, that affect the train timings. Weather data is used to check the influence of rain/snow, wind and temperature on train delays. More information about the datasets used are included in the following sections.
+
 ## Kaggle Train Delay dataset
-The Kaggle Train Delay dataset contains delay data from Amtrak and NJ Transit trains. 
+
+The Kaggle Train Delay dataset contains data for Amtrak and NJ Transit trains. Amtrak doesn't have delay information. Thus, our analysis will only use NJ Transit data. We have details of train lines, stations that are covered by trains in the order of their stops for a particular line. Train IDs are also included and we can observe that most trains are daily, weekly or bi-weekly. We are using the data from April 2018 (weeks 13 to 18 of the year).    
 ```{r}
 # dat_2018_03 = read.csv('archive/2018_03.csv')
 # dat_2018_04 = read.csv('archive/2018_04.csv')
-# 
 # dat <- rbind(dat_2018_03, dat_2018_04)
 
 dat <- read.csv('archive/2018_04.csv')
@@ -130,10 +142,10 @@ dat <- dat %>%
          dotw =  wday(scheduled_time, label=TRUE),
          week = week(scheduled_time)) %>% distinct()
 
-unique(dat %>% select(week, date, dotw))
+#unique(dat %>% select(week, date, dotw))
 ```
 
-```{r}
+```{r include = FALSE}
 M <- sapply(dat %>% filter(type == "NJ Transit"), function(x) sum(is.na(x)));
 print(M[M>0][[1]])
 print(nrow(dat %>% filter(type == "NJ Transit")))
@@ -144,10 +156,11 @@ print(M[M>0][[1]])
 print(nrow(dat %>% filter(type != "NJ Transit")))
 ```
 
-
 ## New Jersey Rail Stations dataset
-The NJ stations dataset consists of coordinates for the stations that the kaggle train delay dataset consists of. We are not considering Amtrak stations as the delay data is not available for them in the dataset.   
-```{r}
+
+The kaggle train delay dataset does not contain coordinates information, NJ stations dataset is used to ger the coordinates for thos stations. We are not considering Amtrak stations as the delay data is not available for them in the kaggle dataset.  
+
+```{r message=FALSE, warning=FALSE}
 #jlines <- st_read('Passenger_Railroad_Lines_in_NJ-shp/Passenger_Railroad_Lines_in_NJ.shp') %>%
   #st_transform('EPSG:2236')
 
@@ -160,12 +173,6 @@ njstations.first <- njstations[match(unique(njstations$STATION), njstations$STAT
 
 amtrak <- st_read('Amtrak_Stations-shp/Amtrak_Stations.shp') %>%
   st_transform('EPSG:2236')
-```
-
-The histogram below shows the frequency distribution of delay (in minutes) for the month of April 2018. We can observe that most trains are in the lower delay range. Few trains have more dalays. 
-
-```{r}
-hist(dat$delay_minutes)
 ```
 
 ```{r include = FALSE}
@@ -201,10 +208,11 @@ hist(dat$delay_minutes)
   #left_join(amtrak, by = c('to' = 'CITY2'))
 ```
 
+### Standardising Rail Line Names
+
 Some of the stations names are slightly different, though they point to the same station. Here, we are standardizing those. 
 
 ```{r}
-
 dat <- dat %>%
   mutate(new_line_name_geo = case_when(
                   line == 'atl. city line' ~ 'ATLANTIC CITY RAIL LINE',
@@ -219,6 +227,12 @@ dat <- dat %>%
                   ))
 
 dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit() 
+
+dat_njstation <- dat_nj %>%
+  left_join(njstations.first, by = c('to' = 'STATION'))
+
+nas <- dat_njstation %>%
+  filter (is.na(COUNTY))
 ```
 
 ```{r include = FALSE}
@@ -244,20 +258,15 @@ dat_nj <- subset(dat, type != 'Amtrak') %>% na.omit()
 #   left_join(njstations, by = c('from' = 'STATION', 'new_line_name_geo' = 'new_line'))
 ```
 
-```{r}
-dat_njstation <- dat_nj %>%
-  left_join(njstations.first, by = c('to' = 'STATION'))
-
+```{r include = FALSE}
 # dat_njstation_to <- dat_nj %>%
 #   left_join(njstations, by = c('to' = 'STATION'))
-
-nas <- dat_njstation %>%
-  filter (is.na(COUNTY))
 ```
 
-# Getting coordinates of missing stations 
+### Getting the Coordinates for Stations 
 
-There are around 26 stations with missing Latitude, Longitude and geometry. This section uses NJ Stations data's coordinates to fill up the missing values in the main dataset.    
+There are around 26 stations with missing Latitude, Longitude and geometry, even after the join. This is due to unmatching Rail line names or station names. This section uses NJ Stations data's coordinates to fill up the missing values in the main dataset. We retain the original version of the coordinates too, as we will be using that to compute the distance between the train stations, which is one of our features for the prediction model. 
+
 ```{r}
 #miss <- dat_njstation[(is.na(dat_njstation$RAIL_LINE)), ] %>% select(to) 
 dat_njstation <- dat_njstation %>%
@@ -377,25 +386,21 @@ coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
 dat_njstation$LATITUDE_exist = coords$X
 dat_njstation$LONGITUDE_exist = coords$Y
 
-
-```
-
-```{r}
 dat_njstation <- dat_njstation %>%
   mutate(LONGITUDE_geo = ifelse(is.na(LONGITUDE_geo),LONGITUDE_exist,LONGITUDE_geo),
          LATITUDE_geo = ifelse(is.na(LATITUDE_geo),LATITUDE_exist,LATITUDE_geo),
          LONGITUDE_map = ifelse(is.na(LONGITUDE_map),LONGITUDE,LONGITUDE_map),
          LATITUDE_map = ifelse(is.na(LATITUDE_map),LATITUDE,LATITUDE_map)) %>%
   select(-LATITUDE_exist,-LONGITUDE_exist,-LATITUDE,-LONGITUDE)
-```
 
-```{r}
 dat_njstation <- dat_njstation %>%
 st_as_sf(., coords = c("LONGITUDE_geo", "LATITUDE_geo"), crs = 3701)
 ```
 
 ## Census Data
-Collecting census data for States - New Jersey, New York and Pennsylvania. We have imported factors which we think may have some influence directly or indirectly on the trains and their running times. We have taken total population, median income, median age, population of white people, travel time, number of commuters, means of transport available and total public transportation for those regions. 
+
+Census data for States - New Jersey, New York and Pennsylvania have been imported. Factors which we think may have some influence directly or indirectly on the trains and their running times have been chosen. We have taken total population, median income, median age, population of white people, travel time, number of commuters, means of transport available and total public transportation for the regions that NJ transit covers. The plot below shows the total area that is covered by the census tracts and that the region covered by the NJ Transit stations is a small subset. 
+
 ```{r get_census, message=FALSE, warning=FALSE}
 census <- 
   get_acs(geography = "tract", 
@@ -433,17 +438,19 @@ mapview(st_bbox(census)) +
   mapview(st_bbox(subset_census), col.regions = "orange")
 ```
 
+Here. we have plotted the subset, only those areas that are of out interest due to their proximity to the NJ Transit stations. 
+
 ```{r}
 ggplot() +
-  geom_sf(data = subset_census) +
-  geom_sf(data = njstations %>% st_transform('EPSG:2236'), color = "blue") +
-  mapTheme
+  geom_sf(data = subset_census %>% st_transform('EPSG:2236')) +
+  geom_sf(data = njstations %>% st_transform('EPSG:2236'), color = "blue") 
 ```
 
 ## Weather Data
-We are collecting weather data for Trenton for the same duration as our original data set (April 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study, it would make sense to include other location's weather data as well.
 
-```{r import_weather, message = FALSE, warning = FALSE, cache = TRUE}
+We are collecting weather data for Trenton for the same duration as our original data set (April 2018). We make an assumption that overall weather patterns will remain similar throughout the states. For a more granular study, it would make sense to include other location's weather data as well. Weather helps to accounts for certain situations that may be a potential cause for delay. 
+
+```{r import_weather, message=FALSE, warning=FALSE, cache=FALSE}
 #Every hour
 weather.Panel_hourly <- 
   riem_measures(station = "TTN", date_start = "2018-04-01", date_end = "2018-05-02") %>%
@@ -475,7 +482,9 @@ weather.Panel_daily <-
 glimpse(weather.Panel_daily)
 ```
 
-## Time-space Panel + Weather 
+### Time-space Panel + Weather 
+
+Now that the dataset has been merged with the daily weather data, we can move forward to make useful conclusions with the data that we currently have.  
 
 ```{r}
 dat_njstation$date <- as.Date(dat_njstation$date)
@@ -484,7 +493,17 @@ dat_njstation <-
   left_join(weather.Panel_daily, by = c('date' = 'date(interval60)'))
 ```
 
-## Exploratory Data Analysis
+# Exploratory Data Analysis
+
+We perform exploratory data analysis to understand how the independent variables are related to the dependent variable (delay). The histogram below shows the frequency distribution of delay (in minutes) for the month of April 2018. We can observe that most trains are in the lower delay range. Few trains have higher delay times. 
+
+```{r}
+hist(dat$delay_minutes)
+```
+
+### Descriptive Statistics
+
+The table below shows the descriptive statistics. such as mean, standard deviation, minimum and maximum, for some of the independent variables in our dataset. 
 
 ```{r message=FALSE, warning=FALSE, results="asis"}
 numericVars <- 
@@ -514,9 +533,9 @@ grid.arrange(
 
 ### Delay vs Precipitation (Daily)
 
-The bar plot below shows the relation between train delay and precipitation (Rain/Snow).
+The bar plot below shows the relation between train delay and precipitation (Rain/Snow). We observe that mean delay is lower on a rainy/snowy day. This may be due to lesser number of passengers owing to the weather conditions (only those that need to travel are out and the rest mostly stay put). But the mean difference isn't a very significant number. There is an average difference of less than 1 minute. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(date) %>% 
   dplyr::summarize(delay_minutes = mean(delay_minutes, na.rm=T),
@@ -532,9 +551,9 @@ dat_njstation %>%
 
 ### Delay vs Wind speed (Daily)
 
-The bar plot below shows the relation between train delay and wind speed.
+The bar plot below shows the relation between train delay and wind speed. Looks like the average train delay is higher on a windy day. Strong winds are known to be a safety threat to trains due to their devastating effects which can range from uprooted trees/branches on the railway tracks to toppling of the trains. Especially the trains running above the ground reduce speeds when its too windy. Thus, wind is a reasonably good factor to account for certain train delays caused by blocked tracks, lower train speed etc. But the mean difference in the delays is less than a minute for the month of April 2018. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(date) %>% 
   summarize(delay_minutes = mean(delay_minutes, na.rm=T),
@@ -550,9 +569,9 @@ dat_njstation %>%
 
 ### Delay vs Temperature (Daily)
 
-The bar plot below shows the relation between train delay and temperature.
+The bar plot below shows the relation between train delay and temperature. We see that hot temperature causes higher delay. It is common for the rail operators to slow the trains down when the temperature is high as the tracks expand/distort. This is done to ensure safety. The difference in mean delays is again less than a minute for the month of April. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(date) %>% 
   summarize(delay_minutes = mean(delay_minutes, na.rm=T),
@@ -568,7 +587,7 @@ dat_njstation %>%
 
 ### Distribution of Total delay for different trains
 
-
+The bar graph shows the distribution of total delays for different trains, and we can clearly observe that most trains have small value of delay (in minutes).
 
 ```{r message=FALSE, warning=FALSE}
 delay_train <- dat_njstation %>%
@@ -580,11 +599,11 @@ ggplot(delay_train, aes(total_delay)) +
   geom_histogram()
 ```
 
-### Distribution for Time of Day
+### Distribution of Delay by Time of the Day
 
+We can observe that most delays lie withing the 15 minutes range except for overnight trains for which the distribution of delays is slightly different (with most trains having zero delay). 
 
-
-```{r}
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
         mutate(time_of_day = case_when(hour(interval60) < 7 | hour(interval60) > 18 ~ "Overnight",
                                  hour(interval60) >= 7 & hour(interval60) < 10 ~ "AM Rush",
@@ -601,27 +620,28 @@ dat_njstation %>%
   plotTheme
 ```
 
+### Delay by the Day of the Week
+
+The delays seem to be highest on Mondays. The weekends seem to have lesser delay, maybe due to less commuters on those days. The other days of the week have almost the same distribution. Late morning to late noon, the delay seems to be comparatively lower on weekdays, maybe due to reduced footfall as the working class and professionals would have already reached their destinations by then. Thus, its a good time to travel if the schedule is flexible. 
+
 ```{r}
 ggplot(
      dat_njstation %>% mutate(hour = hour(scheduled_time)))+
      geom_freqpoly(aes(hour, color = dotw), binwidth = 1)+
     labs(title="Total Delay by day of week for NJ Transit stations, April 2018",
        x="Hour", 
-       y="Delay (minutes)")+
+       y="Delay")+
      plotTheme
 ```
 
 ### Distribution across Time and Space
 
-Correct Latitude and Longitude transformations
-```{r}
+The plots shows how the delay varies at different stations at different times of the day (on weekdays and weekends). 
+```{r message=FALSE, warning=FALSE}
 coords <- as.data.frame(st_coordinates(st_as_sf(dat_njstation)))
 dat_njstation$LONGITUDE = coords$Y
 dat_njstation$LATITUDE = coords$X
-```
 
-The plots shows how the delay varies at different times of the day and and on weekdays and weekends. 
-```{r}
 ggplot()+
   geom_sf(data = subset_census, size = 0.2)+
   geom_point(data = dat_njstation %>% st_transform('EPSG:2236') %>% 
@@ -638,18 +658,14 @@ ggplot()+
   scale_colour_viridis(direction = -1,
   discrete = FALSE, option = "D")+
   facet_grid(weekend ~ time_of_day)+
-  labs(title="Delay (minutes) at different times of the day, April 2018")+
-  mapTheme
+  labs(title="Delay (minutes) at different times of the day, April 2018")
 ```
-
-
-### Reported Delays per Day
 
 ### Total Delays in Minutes per Day
 
-The shows average delay per day for 30 days (Month pf April), 
+The shows average delay per day for 30 days (Month pf April). We can observe some peaks suggesting unusually high average delays. 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 delay.Panel_hourly <- 
   dat_njstation %>%
   group_by(interval60) %>%
@@ -659,10 +675,12 @@ ggplot(delay.Panel_hourly, aes(interval60, avg_delay)) + geom_line() +
   labs(title="Average delay for 30 days span", x="Hour", y="Delay in minutes") + plotTheme
 ```
 
-## Feature Engineering
+# Feature Engineering
+
 ### Distance between Stations
 
-These stations have missing Geometries
+Here, we are using the coordinates of NJ Transit stations to find distance between them. We are using 'distm' function for this purpose. It outputs distance in meters, which we have converted to miles.  
+
 ```{r}
 #unique(dat_njstation %>% filter(is.na(LATITUDE)) %>% select(from, new_line_name_geo))
 # library(geosphere)
@@ -681,9 +699,7 @@ These stations have missing Geometries
 #       dat_njstation$dist[i] = distm (c(prev_row$LONGITUDE_map,prev_row$LATITUDE_map), c(row$LONGITUDE_map,row$LATITUDE_map), fun = distHaversine)
 #     }
 # }
-```
 
-```{r}
 #write.csv(as.matrix(dat_njstation %>% select(dist)), file = "dist_variable.csv")
 distance <- read.csv(file = "dist_variable.csv", row.names=1)
 dat_njstation <- cbind(dat_njstation, distance$X) %>%
@@ -692,6 +708,9 @@ dat_njstation <- cbind(dat_njstation, distance$X) %>%
 ```
 
 ### Number of stations for a particular route
+
+We have also considered the number of stations for a particular route as a factor to express the overall delay. 
+
 ```{r message=FALSE, warning=FALSE}
 ## Check if same train runs multiple times on a particular day 
 # dat_njstation [duplicated(dat_njstation %>% select(date, train_id, from, to)),]
@@ -705,7 +724,10 @@ dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
 ```
 
 ### Lag Features
-```{r}
+
+To see how the particular trains have been in terms of delay during its previous journeys, we have considered that feature as a lag variable. We have considered daily, weekly and bi-weekly schedules of the trains. This helps the model to make predictions based on past, train-specific data. 
+
+```{r eval=F, include=F}
 # dat_2months <- rbind(
 #   read.csv('archive/2018_03.csv'),
 #   read.csv('archive/2018_04.csv')
@@ -717,9 +739,7 @@ dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
 #          date = as_date(scheduled_time),
 #          interval60 = floor_date(ymd_hms(scheduled_time), unit = "hour")) %>% 
 #   distinct()
-```
 
-```{r eval=F, include=F}
 # start_date <- as_date('2018-04-01')
 # for(i in 1:nrow(dat_njstation))
 #   {
@@ -751,9 +771,7 @@ dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
 #       filter(date == cur_date - 14) %>%
 #       select(delay_minutes)
 #   }
-```
 
-```{r eval=F}
 # get_lagvars <- function(dat_njstation_row){
 #     #print(dat_njstation_row)
 #     cur_date <- dat_njstation_row$date
@@ -806,20 +824,20 @@ dat_njstation <- dat_njstation %>% st_drop_geometry(.) %>%
 #Uncomment first time
 #dat_lag <- apply(dat_njstation, 1, get_lagvars)
 #result <- as.data.frame(do.call(rbind, dat_lag))
-```
 
-```{r eval=F, include=F}
 #write.csv(as.matrix(result %>% select(lag_1week, lag_2week)), file = "lag_variables_week.csv")
 #write.csv(as.matrix(result), file = "lag_variables.csv")
 #write.csv(as.matrix(dat_njstation), file = "dat_njstation.csv")
 ```
 
-```{r include=F}
+```{r}
 lag_features <- read.csv(file = "lag_variables.csv",row.names=1)
 dat_njstation <- cbind(dat_njstation, lag_features)
 ```
 
-```{r}
+The plots below shows the delay as a function of daily, weekly and bi-weekly lags. As we can observe, the points are no where close to the line. Transformations may help improve this. Log transform brings in a lot of inf values due to presence of 0 in the lags. 
+
+```{r message=FALSE, warning=FALSE}
 dat_njstation <- dat_njstation %>%
   mutate(l1dlog = log(lag_1day),
          l1wlog = log(lag_1week),
@@ -846,8 +864,10 @@ plotData.lag %>%
 ```
 
 ### Critical Station variable
-How many trains cross a particular station?
-```{r}
+
+This variable helps to understand how many trains cross a particular station. Some stations which are a part of many lines, such as Hoboken, have too many trains passing through them, which may be a cause of some delay or congestion if not handled well.  
+
+```{r message=FALSE, warning=FALSE}
 # njstation_critical_station <- dat_njstation %>%
 #   group_by(to, train_id) %>%
 #   dplyr::summarise(critical = n()) %>%
@@ -863,8 +883,10 @@ ggplot() +
 ```
 
 ### Congestion variable
-For a particular station, how many trains cross in that particular hour?
-```{r}
+
+This variable is slightly different from the one created above, as this delays with number of trains that cross a particular station in a particular hour. This delays with hourly congestion, a more granular variable. 
+
+```{r message=FALSE, warning=FALSE}
 njstation_cong <- dat_njstation %>%
   group_by(to, interval60) %>%
   dplyr::summarise(congestion = n()) %>%
@@ -873,8 +895,9 @@ njstation_cong <- dat_njstation %>%
 dat_njstation <- dat_njstation %>% left_join(njstation_cong)
 ```
 
+### Number of trains in every station on 15th April, 2018
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 one_day <- 
   dat_njstation %>%
   filter(date == as_date('2018-04-15'))
@@ -883,11 +906,7 @@ one_day.panel <-
   expand.grid(
     interval60 = unique(one_day$interval60),
     to = unique(one_day$to))
-```
 
-
-
-```{r}
 ride.animation.data <-
   mutate(one_day, Congestion_Counter = 1) %>%
   right_join(one_day.panel) %>% 
@@ -903,9 +922,7 @@ ride.animation.data <-
                            Congestion > 4 & Congestion <= 6 ~ "5-6 trains",
                            Congestion > 6 ~ "6+ trains")) %>%
   mutate(Delays = factor(Trains))
-```
 
-```{r}
 rideshare_animation <-
   ggplot() +
   geom_sf(data = subset_census) +
@@ -919,16 +936,18 @@ rideshare_animation <-
 animate(rideshare_animation, duration=20, renderer = gifski_renderer())
 ```
 
-```{r}
+```{r include = FALSE}
 #anim_save("trains_local", rideshare_animation, duration=20, renderer = gifski_renderer())
 ```
 
 ### Creating custom dependant variable - diff_delay
 
+As delay is a cumulative quantity, that is delay at a particular station may be a sum of all the previous delay, unless the operator covers the delay by speeding, for instance. Thus, we have a variable diff_delay that can also be used in the prediction.   
+
 <!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
 <!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
 ```{r}
-dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
+#dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
 
 # for(i in 1:nrow(dat_njstation)){
 #     if((i %% 20000) == 0){
@@ -944,14 +963,14 @@ dat_njstation <- arrange(dat_njstation, date, train_id, stop_sequence)
 #         (row$scheduled_time - prev_row$scheduled_time)
 #     }
 # }
-```
 
-```{r}
 #write.csv(as.matrix(dat_njstation %>% select(diff_delay)), file = "diff_delay_variable.csv")
 diff_delay_var <- read.csv("diff_delay_variable.csv")
 a <- diff_delay_var$diff_delay
 dat_njstation <- cbind(dat_njstation, as.data.frame(a))
 ```
+
+We are setting the NAs in the lags to 0 so that they don't interfere with the training and testing. There are other efficient means to replace NAs. 
 
 ```{r}
 dat_njstation$lag_1day[is.na(dat_njstation$lag_1day)] <- 0
@@ -959,17 +978,23 @@ dat_njstation$lag_1week[is.na(dat_njstation$lag_1week)] <- 0
 dat_njstation$lag_2week[is.na(dat_njstation$lag_2week)] <- 0
 ```
 
-### Correlation plot for Continuous numeric features
 
-## Building Model
+# Building Model
+
+We have tried 2 linear regression models and a random forest model to predict train delays. 
 
 ### Remove Outliers and Split Data into Train and Test
+
+The 98th percentile is 19.38 minutes. Thus, we have removed values that are higher than 20 minutes, so the outliers don't interfere with the predictions. Weeks 13 to 16 form the training set and the rest form the test set.
+
 ```{r}
 #98th percentile is 19.38
 dat_njstation <- dat_njstation %>% filter(delay_minutes < 20)
 dat.Train <- filter(dat_njstation, week < 17)
 dat.Test <- filter(dat_njstation, week >= 17)
 ```
+
+The plot below shows the mean delay across all train lines for the train and test set. We can see that the pattern is more or less the same (as if repeating weekly), yet there is a lot of randomness. .
 
 ```{r message=FALSE, warning=FALSE}
 rbind(
@@ -985,6 +1010,8 @@ rbind(
         plotTheme + theme(panel.grid.major = element_blank())
 ```
 
+The mean delay for each of the train lines is plotted in one graph. Such visualizations help the users understand which lines have more delays, thus helping them choose other lines, if such an option is availble. 
+
 ```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   group_by(line, date) %>% 
@@ -992,10 +1019,12 @@ dat_njstation %>%
   ungroup() %>% 
   ggplot(aes(date, Trip_Delay, color = line)) + geom_line() +
         #scale_colour_manual(values = palette2) +
-  labs(title="Mean Delay across all train lines",
+  labs(title="Mean Delay across each train line",
         x="Day", y="Trip Delay (minutes)") +
   plotTheme + theme(panel.grid.major = element_blank())
 ```
+
+Users can be given an option to view the mean delay for a particular line too, as shown below (Eg. Northeast Corridor). 
 
 ```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
@@ -1008,34 +1037,47 @@ dat_njstation %>%
   #   breaks = function(x) seq.Date(from = min(x), to = max(x), by = "5 days"),
   #   minor_breaks = function(x) seq.Date(from = min(x), to = max(x), by = "1 day")) +
         #scale_colour_manual(values = palette2) +
-  labs(title="Mean Delay across all train lines",
+  labs(title="Mean Delay over April for Northeast Corridor Line",
         x="Day", y="Trip Delay (minutes)") +
   plotTheme
 ```
-```{r}
+
+Similarly, there can be bar plots showing mean delay on every day of the week, which will help users gauge the delay on a particular day that they wish to travel. 
+
+```{r message=FALSE, warning=FALSE}
 dat_njstation %>%
   filter(to == "New York Penn Station") %>% 
   group_by(dotw) %>%
   dplyr::summarise(Trip_Delay = mean(delay_minutes)) %>%
   ungroup() %>%
   ggplot(aes(dotw, Trip_Delay)) + geom_histogram(size=1, stat="identity", fill="blue") +
-  plotTheme + labs(title="Mean delay per day")
+  plotTheme + labs(title="Mean delay for every day of the week")
 ```
 
-### Training model : First model
-Trained using actual delay_minutes as the dependent variable.
+# Training model
+
+Trained using actual delay_minutes as the dependent variable. The independent variables finally being considered are day of the week, from and to stations, train ID, total stops in a route, hour of the day, wind speed, temperature, precipitation, distance between stations, daily lag, weekly lag, bi-weekly lag, hourly congestion at a station, daily congestion at a station and differenced delay.  
 
 ```{r}
 ind.vars.org <-  c("dotw", "from", "to","hour", "Wind_Speed", "Temperature", "Precipitation")
 
-ind.vars.imp <- c("dotw", "from", "to", "total_stops", "hour", "Wind_Speed", "Temperature",
+ind.vars.imp <- c("dotw", "from", "to", "train_id", "total_stops", "hour", "Wind_Speed", "Temperature",
                "Precipitation", "dist", "lag_1day", "lag_1week", "lag_2week",
                "congestion", "critical", "a")
 
 dep.var <- "delay_minutes"
 ```
 
-#### Linear Regression model
+<!-- ### Training model : Second model -->
+
+<!-- Trained using estimated delay as the dependent variable. -->
+<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
+<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
+
+### Linear Regression model
+
+Linear regression model is run on 2 different sets of variables to show how inclusion of the newly created variables help with better predictions, but not good enough to be implemented for real world predictions. The results of the regression are as shown below. the maximum variance that the models can address is 26%, which is pretty low. 
+
 ```{r message=FALSE, warning=FALSE}
 reg_base <- lm(delay_minutes ~ ., na.action = na.exclude, family = "poisson",
            data = dat.Train %>% select(ind.vars.org, dep.var))
@@ -1052,7 +1094,10 @@ summary(reg)$r.squared
 summary(reg)$adj.r.squared
 ```
 
-#### Random Forest model
+### Random Forest model
+
+As the results from the previous model aren't that good, we have now used Random Forest model with 50 trees for the predictions. The variance explained in this case is around 45%, which is an improvement from the previous model. 
+
 ```{r message=FALSE, warning=FALSE}
 rf <- randomForest(delay_minutes ~ ., na.action = na.exclude,
                    data = dat.Train  %>% select(ind.vars.imp, dep.var),
@@ -1062,17 +1107,17 @@ rf
 ```
 
 ### Predicting for test data
+
 We use nested data for the testing part. 
 
 ```{r nest_data, warning = FALSE, message = FALSE}
 dat.Test.weekNest <- dat.Test %>% 
-  select(ind.vars1, week, interval60, delay_minutes, LATITUDE, LONGITUDE) %>%
+  select(ind.vars.imp, week, interval60, delay_minutes, LATITUDE, LONGITUDE) %>%
   nest(-week) 
 ```
 
-na.action=na.exclude
+When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables.
 
-When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables. 
 ```{r predict_function, cache = TRUE}
 model_pred <- function(dat, fit){
    pred <- predict(fit, newdata = dat, na.action = na.exclude)}
@@ -1098,6 +1143,8 @@ week_predictions <-
            MAPE = map_dbl(AbsPercErr, mean, na.rm = TRUE),
            )
 ```
+
+The table below shows the results of all the models that we have built, using the two sets of variables. We can see that the second set of variables, consisting of the improves features performed better at all times. The best model is Random forest. 
 
 ```{r}
 kable(week_predictions %>% 
@@ -1137,9 +1184,7 @@ crossValidate <- function(dataset, id, dependentVariable, indVariables) {
   }
   return(allPredictions)
 }
-```
 
-```{r }
 # Helper function
 find_na_rows <- function(data){
   M <- sapply(data, function(x) sum(is.na(x)));
@@ -1147,7 +1192,8 @@ find_na_rows <- function(data){
 }
 ```
 
-train_id feature removed to account for missing levels.
+The train_id feature removed to account for missing levels.
+
 ```{r message=FALSE, warning=FALSE, results=F}
 dat_njstation <- dat_njstation %>% 
   mutate(dotw_id = wday(scheduled_time))
@@ -1163,7 +1209,9 @@ reg.cv <- crossValidate(
   indVariables = ind.vars)
 ```
 
-```{r}
+Distribution of MAE gives us an idea about the goodness of the model. We can see that the MAEs are on a lower side, most of it less than 0.5. and a few close to 0.6.
+
+```{r message=FALSE, warning=FALSE}
 error_by_reg_and_fold <- 
   reg.cv %>%
     group_by(hour) %>% 
@@ -1180,21 +1228,27 @@ error_by_reg_and_fold %>%
          x="Mean Absolute Error", y="Count") 
 ```
 
-### Error Analysis
+# Error Analysis
 
-#### MSE Errors by model and week - Accuracy
+### MSE Errors by model and week - Accuracy
+
+We see that MAEs reduce as more features are added and the model is improved. 
+
 ```{r}
 week_predictions %>%
   dplyr::select(week, Regression, MSE) %>%
   gather(Variable, MSE, -Regression, -week) %>%
   ggplot(aes(week, MSE)) + 
     geom_bar(aes(fill = Regression), position = "dodge", stat="identity") +
-    scale_fill_manual(values = palette2) +
+    scale_fill_manual(values = palette3) +
     labs(title = "Mean Squared Errors by \nmodel specification and week") +
   plotTheme
 ```
 
-#### Error across Time
+### Error across Time
+
+From the plot below, we can observe that the linear model doesn't capture all the variations. But the Random Forest model improved the forecasting by a lot. The peaks and dips have been captures well, and most points overlap showing that the predictions are actally good. The delay forecast is almost the same as the observed values. 
+
 ```{r message=FALSE, warning=FALSE}
 week_predictions_pull <-  week_predictions %>% 
     mutate(interval60 = map(data, pull, interval60),
@@ -1217,7 +1271,10 @@ week_predictions_pull %>%
       plotTheme
 ```
 
-#### Errors across Space
+### Errors across Space
+
+When we look at our mean absolute errors by station there seems to be a spatial pattern to our error. The central region seems to have the highest error, when compared to regions really far away. The northeast corridor line seems to have the highest error, showing that the features aren't helping much for that particular line. 
+
 ```{r message=FALSE, warning=FALSE}
 week_predictions_pull %>%
     select(interval60, to, start_lat, start_lon, Observed, Prediction, Regression) %>%
@@ -1231,11 +1288,13 @@ ggplot(.)+
              fill = "transparent", alpha = 0.8) +
   scale_colour_viridis(direction = -1,
   discrete = FALSE, option = "D") +
-  labs(title="Mean Absolute Error, Test Set, RandomForest")+
-  mapTheme()
+  labs(title="Mean Absolute Error, Test Set, RandomForest")
 ```
 
-#### Correlation in Errors across Time
+### Correlation in Errors across Time
+
+If we plot observed vs. predicted delays for different times of day during the week and weekend, some patterns begin to emerge. We are certainly underpredicting in general.
+
 ```{r message=FALSE, warning=FALSE}
 week_predictions_pull %>%
     select(interval60, to, start_lon, start_lat, Observed, Prediction, Regression, dotw) %>%
@@ -1257,7 +1316,10 @@ week_predictions_pull %>%
   plotTheme
 ```
 
-#### Error across Space and Time
+### Error across Space and Time
+
+There is some spatial pattern (in terms of rail lines) that we can observe with the MAEs. This changes the delay in an unpredictable way. Thus, causes high errors while forecasting. The unavailability of clear spatial or temporal pattern makes it difficult for us to easily fix/reduce the errors in predictions. 
+
 ```{r message=FALSE, warning=FALSE}
 week_predictions_pull %>%
     select(interval60, to, start_lon, start_lat, Observed, Prediction, Regression, dotw) %>%
@@ -1276,18 +1338,13 @@ week_predictions_pull %>%
              fill = "transparent", size = 1.5, alpha = 0.8)+
   scale_colour_viridis(direction = -1, discrete = FALSE, option = "D")+
   facet_grid(weekend~time_of_day)+
-  labs(title="Mean Absolute Errors, Test Set")+
-  mapTheme()
+  labs(title="Mean Absolute Errors, Test Set")
 ```
 
+# Generalizability - Socio-Economic Factors
 
-<!-- ### Training model : Second model -->
+MAE increases with increasing Income, Percent White people but seems to be negatively related to the Percentage of people taking public transit.
 
-<!-- Trained using estimated delay as the dependent variable. -->
-<!-- Where estimated delay = Actual time of travel - Scheduled time of travel, -->
-<!-- Time of travel = Time recorded at destination station (from) - Time recorded at source station (to) -->
-
-### Generalizability - Socio-Economic Factors
 ```{r message=FALSE, warning=FALSE}
 week_predictions_with_census <- 
   week_predictions_pull %>% 
@@ -1322,8 +1379,13 @@ week_predictions_with_census %>%
 
 ### Conclusion
 
+We can see that train delays can be predicted to a very good extent with the use to right variables. A limited set of variables, with a basic random forest algorithm is able to predict with 45% of the variance being accounted for. Our analysis and predictive model in the form of an app will give users the power of advanced analytics to help travel efficiently. The under-predictions may still mean the passengers will have to wait at certain stations or may get delays trying to reach their destination. But the wait time is definitely reduced and due to a delay prediction, they would not be overly agitated, as they were already expecting a delay. Over-predictions would cause havoc, with people missing trains.   
 
-There can be multiple factors causing delay. It is hard for us to be able to account for each. [NJ Transhit](https://njtranshit.com/excuses) provides a list of common and new excuses provided by rail authorities for delays. 
+This model can definitely be improved to get much better results. One way would be to take into account more factors that affect the train journeys. As already discussed, some factors are pretty unpredictable, but other features linked to the occurrence of such an event may be considered, if such a feature is available. Some of the reasons/excuses provided by rail authorities for trains delays are mentioned in the NJ Transhit website (https://njtranshit.com/excuses). Features related to those causes can be considered and experimented with to see if they improve the results. We could increase the number of trees in the random forest, provided we have powerful CPU. As the amount of data and features is too high, the training of Random Forest takes really long for higher number of trees. 
+
+We have only included the statistics and features for the 'To' station and not the from station. Inclusion of similar set of variables for the station from which the train departs can add some more information than there already is, accounting for the delay due to the departing station too. 
+
+Even after considering those cases, it is hard to predict every delay that many happen as some problems that the trains face are sudden. Thus, the limitations of such models/applications need to be understood so that there isn't a completely blind reliance on them. 
 
 
 
