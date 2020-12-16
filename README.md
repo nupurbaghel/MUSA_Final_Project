@@ -1,5 +1,6 @@
 # MUSA_Final_Project - 
  ## Forecast Metro train delays in and around NYC
+ <hr>
   
   The link to our youtube video: https://youtu.be/1iJWN-v1mvI
   
@@ -9,7 +10,6 @@
   As already mentioned, trains delays are a cause of concern for many commuters as it is pretty random, or at least that is what it seems like to some people. Train delays can definitely be predicted to some extent provided there is up-to-date accurate data to learn the patterns from. Most times, train delays are due to random problems such as fallen trees blocking the track or technical issues with the train which can be approximated with the utilization of certain variables, which we have capitalized on in this project. These predictions can be used either by the commuters or by the authorities. The application will help the users commute reliably and more effectively, allowing them to plan hours or days prior to their journey, allowing them to make informed decisions. They can schedule their trips efficiently and choose days with low probability of delay if they have a flexible appointments or choose earlier trains to make it to their destination on time. This application can also be used by the authorities to counter expected train delays. But we will be focusing in designing an application to help the commuters.
   
  For more details, look into the rmd / html files. 
-<hr>
 
 ## Main Files
 - main.Rmd : This RMarkdown contains the project code along with answers to questions asked for in the project requirement.
