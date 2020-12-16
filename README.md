@@ -1,64 +1,32 @@
-# MUSA_Final_Project
- 
-The goal of your final project is to impress your peers and your instructors by utilizing some of the tools you have learned this semester. The assignment is to communicate an engaging public policy use case of predictive modeling by showing off both your analytical skills and your ability to convert those skills into a relevant policy use case.
+# MUSA_Final_Project - 
+ ## Forecast Metro train delays in and around NYC
+  
+  The link to our youtube video: https://youtu.be/1iJWN-v1mvI
+  
+  ## Introduction
+  NJ Transit is considered to have very complex dynamics affecting tens of thousands of people everyday as per a blog post. And it is the case with numerous other transit systems too. Many people rely on these transportation systems for their daily commute and delays may leave them irritated and dissatisfied with the system. Train delays leading to missed connecting trains/flights, miss opportunities, etc. may drive away customers, who are a key source of income here. One way this can be dealt with is by making sure that all trains are on time. But, in this non-ideal world, it is really difficult to maintain such perfection due to various unforeseen circumstances. Thus, train delay predictions come into the picture. We do have many apps that track the status of the trains live, but such applications will not help users plan their trips early on.   
 
-You are required to work in pairs (signup  HYPERLINK "https://docs.google.com/spreadsheets/d/1tT-n82UrjgB9Xt_5ZHD2qwSUdMi-6CfKeo7aiFfQv9M/edit#gid=0" here). Both team members should work on the model, but each member will present a different part of the deliverable. Each pair will receive a grade that comprises both parts of the project.
+  As already mentioned, trains delays are a cause of concern for many commuters as it is pretty random, or at least that is what it seems like to some people. Train delays can definitely be predicted to some extent provided there is up-to-date accurate data to learn the patterns from. Most times, train delays are due to random problems such as fallen trees blocking the track or technical issues with the train which can be approximated with the utilization of certain variables, which we have capitalized on in this project. These predictions can be used either by the commuters or by the authorities. The application will help the users commute reliably and more effectively, allowing them to plan hours or days prior to their journey, allowing them to make informed decisions. They can schedule their trips efficiently and choose days with low probability of delay if they have a flexible appointments or choose earlier trains to make it to their destination on time. This application can also be used by the authorities to counter expected train delays. But we will be focusing in designing an application to help the commuters.
+  
+ For more details, look into the rmd / html files. 
+<hr>
 
-Please focus on cross-validation (random, spatial and time, where appropriate) and on goodness of fit indicators (accuracy and generalizability) that relate directly to the business process. You may have to make up the business process, but please consider social, economic etc. costs/benefits. 
+## Main Files
+- main.Rmd : This RMarkdown contains the project code along with answers to questions asked for in the project requirement.
+- main.html : This is the knitted format of the markdown file
 
-I will open the project registration signup on Tuesday, 11/17 at 9am. 
+## Data 
+-  archive : This is the Kaggle dataset provided to us. It contains train delay information for the years 2018-2020. For our project we only use data for April 2018. (For the purpose of lag calculation, we also look at March 2018 data)
+- Railroad_Stations_in_NJ-shp : This shapefile contains Geospatial locations for stations belonging to New Jersey Rail Transit Network.
+- Amtrak_Stations-shp : This contains Geospatial locations of all Amtrak trains across US (only used for viz in this project) since Amtrak trains were missing delay information.
+- Passenger_Railroad_Lines_in_NJ-shap : This contains Geospatial locations of different Rail lines in the NJ Transit network. 
 
-Schedule
+## Feature Engineered Variables (cached)
+- lag_variables.csv : Contains the lag pertaining to 1 day, 1 week and 2 weeks for every journey recorded in our dataset in April 2018.
+- lag_variables_week.csv : This is a subset of the lag_variables.csv features containing only 1 week and 2 week lags
+- dist_variable.csv : This contains distance in meters between every 2 consecutive station journey in our dataset
+- diff_delay_variables.csv : This contains the actual delay between every 2 consecutive stations (excluding the cumulative delay from previous station)
 
-11/13 – Project introduced
-11/20 – Prepare to discuss your chosen project, data, methods in lab breakout. Sharper wireframe exercise in lab.
-12/4   -  Presentations in class
-12/15 – Final markdown and video due
-
-1.  Deliverable 1 (Due 11/20): Have a partner chosen, pick and project, and be prepared in lab to talk for a few minutes about the questions at the bottom of this document.
-
-2. Deliverable 2 (Due 12/4): Team member 1 will be responsible for a 4 minute 'PechaKucha' presentation that ‘sells’ us on the idea of this fancy new planning app that you’ve designed to solve an important problem. Spend ~50% of your time on exploratory analysis and model results/validation. The expectation is that you will have preliminary model at this stage, which you will sharpen by the time the assignment is due. The other 50% should focus on questions like, What is the use case? Who is the user? How does the app put the model into the hands of a non-technical decision maker? Who is creating the app? Have you created something that is usable by the client? This is a presentation where the slides are set to change automatically, every 20 seconds. This is a requirement. Remember – sell it to us. What should come first - the model or the app? Don’t forget to constantly remind the audience about the use case to keep your solution relevant. 
-
-
-3.  Deliverable 3 (12/15): 
-Team member 1 will have the pechakucha uploaded on youtube with a recorded narration. Link to the video in your markdown.
-
-Team member 2 will be responsible for a markdown write up that would allow someone to replicate your analysis (show your code blocks). Post this markdown on your Github not in a google folder. At minimum, please hit on the below components:
-a. Motivate the analysis – “What is the use case; why would someone want to replicate your analysis and why would they use this approach?”
-    b. Describe the data you used.
-    c. Describe your exploratory analysis using maps and plots.
-    d. What is the spatial or space/time process?
-d. Describe your modeling approach and show how you arrived at your final model.
-e. Validate your model with cross-validation and describe how your predictions are useful (accuracy vs. generalizability).
-f. Provide additional maps and data visualizations to show that your model is useful.
-g. Talk about how your analysis meets the use case you set out to address.
-h. What could you do to make the analysis better?
-
-I expect to see data visualizations that are of high quality. Please include codeblocks.
-
-Project Details - Forecast Metro train delays in and around NYC (NEW): An amazing new  HYPERLINK "https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=2018_11.csv" dataset has popped up on Kaggle recently that list origin/destinations delays for Amtrak and NJ Transit trains. Can you predict train delays? Consider the time frame that it would be useful to have such predictions. Predicting 5 minutes out is not going to be as useful as 2-3 hours out. Consider training on a month and predicting for the next week or two. Consider time/space (train line, county etc.) cross validation. Many app use cases here.
-
-
-Questions to prepare for Friday Nov 20th.
-
-What is the use case? 
-- To predict the metro train delays in and around NYC to help commuters travel reliably and efficient train scheduling.  
-
-How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
-- Data permits authorities to perform both long term and short term planning. Short-term planning can be used to handle minor modifications to daily frequency while long term handling can be used to handle seasonal variations and critical weather conditions.
-Since transit network is a government undertaking the business process will mostly be non-profit making and focusing more on doing good for the society. We will separately also analyze `amtrak` data which is more of a quasi-public corporation operating as a for-profit organization.
-
-What datasets have you identified to help you answer this question?
-- The dataset consists of past train delays for the NJ train line. We plan to include census data to account for socio-economic factors. 
-
-What kind of model would you build and what is the dependent variable?
-- Linear regression model trained on the family of poisson distributions. The dependent variable is the delay (in minutes) variable. 
-
-How will you validate this model (cross-validation & goodness of fit metrics that relate to the business process)?
-- We will perform cross-validation across time (per hour) and analyze the MAE.  
-
-How do you think that stakeholders would want to consume this data?
-- Both people and the service providers will benefit from this. The analysis will help compare the performances of each of the lines/providers. This will help users make informed choices and the service providers give a better experience to the commuters.
-
-What are the use cases for your app and what should the app do?
-- The app will give probable delay estimates based on different factors like time, location, day of the week and line type. This will helps travelers plan their trip more efficiently. The same can be used by the service providers to see how their trains are performing and try to overcome factors that cause delays that may affect their revenue.    
+## Other files
+- trains_local.gif : Contains animation of Congestion variables (number of trains per hour for every station)
+- actual_map_station.JPG : A screenshot of the areal view showing the span of Philadelphia, New Jersey and New York states (blue box), versus the span of NJ Transit network (orange box). Stations are also plotted.
