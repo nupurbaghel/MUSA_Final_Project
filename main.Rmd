@@ -7,7 +7,6 @@ output:
     toc: true
     toc_float: true
     code_folding: "hide"
-    code_download: true
 ---
   
 ```{r setup, include=FALSE}
@@ -933,7 +932,7 @@ rideshare_animation <-
   transition_manual(interval60) +
   mapTheme
 
-animate(rideshare_animation, duration=20, renderer = gifski_renderer())
+#animate(rideshare_animation, duration=20, renderer = gifski_renderer())
 ```
 
 ```{r include = FALSE}
@@ -1118,7 +1117,7 @@ dat.Test.weekNest <- dat.Test %>%
 
 When we run our predictions and summarize our results, we are going to have some NA data, which is due to the lag variables.
 
-```{r predict_function, cache = TRUE}
+```{r predict_function}
 model_pred <- function(dat, fit){
    pred <- predict(fit, newdata = dat, na.action = na.exclude)}
 ```
